@@ -38,21 +38,25 @@ export const DutyCalendar = () => {
     <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-border">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-10 gap-6">
         <h3 className="text-xl font-bold text-text tracking-tight uppercase italic">Duty Map.</h3>
-        <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.15em] text-text-subtle font-mono">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-accent/20 border border-accent/30" />
+        <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em] text-text-subtle font-mono">
+          <div className="flex items-center gap-2.5">
+            <div className="w-3 h-3 rounded-full border-2 border-accent/30 flex items-center justify-center">
+              <div className="w-1 h-1 rounded-full bg-accent" />
+            </div>
             Mission
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-surface-2 border border-border" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-3 h-3 rounded-full border-2 border-border flex items-center justify-center">
+              <div className="w-1 h-1 rounded-full bg-text-subtle/30" />
+            </div>
             Standby
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-3">
+      <div className="grid grid-cols-7 gap-2 md:gap-3">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
-          <div key={d} className="text-center text-[10px] font-black text-text-subtle/50 uppercase py-2 font-mono">
+          <div key={d} className="text-center text-[11px] font-bold text-text-subtle/40 uppercase py-2 font-mono tracking-widest">
             {d}
           </div>
         ))}
@@ -62,19 +66,19 @@ export const DutyCalendar = () => {
         {days.map(day => (
           <motion.div
             key={day.date}
-            whileHover={{ scale: 1.15, zIndex: 10, backgroundColor: 'var(--color-surface-2)' }}
+            whileHover={{ scale: 1.1, zIndex: 10, backgroundColor: 'var(--color-surface)' }}
             className={`
-              aspect-square rounded-xl flex flex-col items-center justify-center relative cursor-pointer
-              transition-all duration-300 border
+              aspect-square rounded-[1.25rem] flex flex-col items-center justify-center relative cursor-pointer
+              transition-all duration-200 border
               ${day.event 
-                ? 'bg-accent/5 border-accent/10 text-accent font-black shadow-sm' 
-                : 'bg-white border-transparent text-text-muted hover:border-border'}
+                ? 'bg-accent/[0.03] border-accent/10 text-accent font-bold' 
+                : 'bg-transparent border-transparent text-text-muted hover:border-border'}
             `}
           >
-            <span className="text-sm font-mono">{day.dayNum}</span>
+            <span className="text-sm font-mono leading-none">{day.dayNum}</span>
             {day.event && (
-              <div className="absolute bottom-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(255,56,92,0.5)]" />
+              <div className="absolute bottom-2.5">
+                <div className="w-1 h-1 rounded-full bg-accent shadow-[0_0_10px_var(--accent)]" />
               </div>
             )}
           </motion.div>
