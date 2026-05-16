@@ -4,8 +4,7 @@ import { getDocumentProxy, extractText } from 'unpdf';
 import { parseRosterText } from '@/lib/parser';
 import { RosterData, DutyEvent, DutyType } from '@/lib/types';
 import { supabase } from '@/lib/utils/supabase';
-// Server-side tracking would normally go here
-// import { trackServerEvent } from '@/lib/analytics/server';
+import { generateICS } from '@/lib/utils/calendar';
 
 export async function parseRoster(formData: FormData): Promise<RosterData> {
   const file = formData.get('file') as File;
@@ -37,6 +36,13 @@ export async function parseRoster(formData: FormData): Promise<RosterData> {
       hotel: d.flight?.hotel,
       description: d.description,
     }));
+
+    const rosterData: RosterData = {
+      events,
+      month: parsed.month,
+      year: parsed.year,
+      crewName: parsed.crewName,
+    };
 
     // Persistence Logic: If userId is provided, sync to Supabase
     if (userId) {
@@ -99,15 +105,28 @@ export async function parseRoster(formData: FormData): Promise<RosterData> {
           
           if (flightError) console.error('Failed to sync flights', flightError);
         }
+
+        // 4. Generate and Store ICS File
+        const icsContent = generateICS(rosterData);
+        if (icsContent) {
+          const filename = `${parsed.year}-${parsed.month}.ics`;
+          const path = `${userId}/rosters/${filename}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('roster-files')
+            .upload(path, icsContent, {
+              contentType: 'text/calendar',
+              upsert: true
+            });
+
+          if (uploadError) {
+            console.error('Failed to store ICS file:', uploadError);
+          }
+        }
       }
     }
 
-    return {
-      events,
-      month: parsed.month,
-      year: parsed.year,
-      crewName: parsed.crewName,
-    };
+    return rosterData;
   } catch (err) {
     console.error('PDF Parse Error:', err);
     throw new Error(err instanceof Error ? err.message : 'Could not read PDF roster.');
