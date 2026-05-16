@@ -16,8 +16,12 @@ export const FileUploader = () => {
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
-    if (!file) return;
+    if (!file) {
+      console.warn('No file accepted');
+      return;
+    }
 
+    console.log('File accepted:', file.name, file.type, file.size);
     setError(null);
     setLoading(true);
     
@@ -33,15 +37,29 @@ export const FileUploader = () => {
       await setRoster(result);
       setLoading(false);
     } catch (err) {
+      console.error('Upload error:', err);
       setError(err instanceof Error ? err.message : 'Failed to parse roster');
       setLoading(false);
     }
   }, [setLoading, setError, setRoster, userId]);
 
+  const onDropRejected = useCallback((fileRejections: any) => {
+    const error = fileRejections[0]?.errors[0];
+    console.error('File rejected:', fileRejections);
+    if (error?.code === 'file-invalid-type') {
+      setError('Invalid file type. Please upload a PDF roster.');
+    } else {
+      setError(error?.message || 'File upload failed');
+    }
+  }, [setError]);
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected,
     accept: {
       'application/pdf': ['.pdf'],
+      'application/x-pdf': ['.pdf'],
+      'application/octet-stream': ['.pdf']
     },
     multiple: false,
     disabled: isLoading,
