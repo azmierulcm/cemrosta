@@ -1,21 +1,24 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Menu, X, Upload, LayoutDashboard, Calendar, MapPinned, ShoppingBag, Settings as SettingsIcon } from 'lucide-react';
+import { Menu, X, Upload, LayoutDashboard, Calendar, MapPinned, ShoppingBag, Settings as SettingsIcon, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { useRoster } from '@/lib/contexts/RosterContext';
 import { supabase } from '@/lib/utils/supabase';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 
 export const Navbar = () => {
   const { user, setUser, openAuthModal } = useAuth();
+  const { reset } = useRoster();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    reset();
   };
 
   const scrollToTop = () => {
@@ -82,11 +85,11 @@ export const Navbar = () => {
                   Log in
                 </button>
                 <button 
-                  onClick={scrollToTop}
+                  onClick={() => openAuthModal('signup')}
                   className="bg-accent text-accent-fg px-10 py-4 rounded-full hover:bg-accent-hover transition-all active:scale-95 shadow-xl shadow-accent/10 font-bold flex items-center gap-3"
                 >
-                  <Upload size={18} strokeWidth={3} />
-                  Upload Roster
+                  <UserPlus size={18} strokeWidth={3} />
+                  Join Now
                 </button>
               </>
             )}

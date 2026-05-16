@@ -11,12 +11,15 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { SAMPLE_PROFILE } from '@/lib/fixtures/sample-profile';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 import { ProfileData } from '@/lib/types';
 
 export default function ProfileClient() {
   const { roster } = useRoster();
   const { profile } = useAuth();
+  const searchParams = useSearchParams();
+  const isDemoMode = searchParams.get('demo') === 'true';
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   // map real roster to profile structure (simplified for Phase 3)
@@ -58,13 +61,15 @@ export default function ProfileClient() {
     })) || []
   } : null;
 
+  const showDemo = !roster && isDemoMode;
+
   return (
     <main id="main-content" className="min-h-screen bg-surface-2 flex flex-col relative">
       <Navbar />
       
       <div className="flex-1">
         <AnimatePresence mode="wait">
-          {!roster ? (
+          {!roster && !isDemoMode ? (
             <motion.div
               key="empty"
               initial={{ opacity: 0 }}
@@ -85,8 +90,12 @@ export default function ProfileClient() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              {realProfileData && (
-                <ProfileFilled data={realProfileData} onEdit={() => setIsEditModalOpen(true)} />
+              {showDemo ? (
+                <ProfileFilled data={SAMPLE_PROFILE} />
+              ) : (
+                realProfileData && (
+                  <ProfileFilled data={realProfileData} onEdit={() => setIsEditModalOpen(true)} />
+                )
               )}
             </motion.div>
           )}

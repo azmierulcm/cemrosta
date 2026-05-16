@@ -40,7 +40,7 @@ export const Footer = () => {
           <div>
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-subtle mb-8 font-mono">{"// PRODUCT"}</h4>
             <ul className="space-y-4">
-              <li><Link href="/profile" className="text-sm font-bold text-text-muted hover:text-text transition-colors">Digital Passport</Link></li>
+              <li><Link href="/profile?demo=true" className="text-sm font-bold text-text-muted hover:text-text transition-colors">Digital Passport</Link></li>
               <li><Link href="/marketplace" className="text-sm font-bold text-text-muted hover:text-text transition-colors">Marketplace</Link></li>
               <li><Link href="#" className="text-sm font-bold text-text-muted hover:text-text transition-colors">Mobile Sync</Link></li>
             </ul>

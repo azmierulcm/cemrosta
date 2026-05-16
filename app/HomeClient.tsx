@@ -16,11 +16,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { AuthModal } from '@/components/shared/AuthModal';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { supabase } from '@/lib/utils/supabase';
-import { Upload } from 'lucide-react';
+import { Upload, Loader2 } from 'lucide-react';
 
 export default function HomeClient() {
-  const { roster } = useRoster();
-  const { user, setUser } = useAuth();
+  const { roster, isLoading: rosterLoading } = useRoster();
+  const { user, setUser, isLoading: authLoading } = useAuth();
   const [showStickyCTA, setShowStickyCTA] = useState(false);
 
   // Monitor scroll for sticky CTA
@@ -63,8 +63,20 @@ export default function HomeClient() {
       
       <div className="flex-1">
         <AnimatePresence mode="wait">
-          {/* Scenario 1: User is not logged in - Show Landing Page */}
-          {!user && !roster ? (
+          {/* Global Loading State */}
+          {(authLoading || rosterLoading) ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="min-h-screen flex flex-col items-center justify-center gap-6"
+            >
+              <Loader2 className="w-12 h-12 animate-spin text-accent" />
+              <p className="text-[10px] font-black text-text-subtle uppercase tracking-[0.4em] font-mono animate-pulse">Initializing Flight Deck...</p>
+            </motion.div>
+          ) : !user ? (
+            /* Scenario 1: User is not logged in - Show Landing Page */
             <motion.div
               key="landing"
               initial={{ opacity: 0 }}
@@ -89,8 +101,10 @@ export default function HomeClient() {
                  <div className="flex items-center justify-center gap-2 mb-6 text-[10px] font-black uppercase tracking-[0.4em] text-text-subtle font-mono">
                    {"// WELCOME CREW MEMBER"}
                  </div>
-                 <h2 className="text-5xl md:text-8xl font-bold text-text mb-8 tracking-tighter">Welcome aboard.</h2>
-                 <p className="text-xl md:text-2xl text-text-muted font-bold tracking-tight max-w-xl mx-auto leading-snug">To begin your journey, please upload your monthly roster PDF.</p>
+                 <h2 className="text-5xl md:text-8xl font-bold text-text mb-8 tracking-tighter">Clear for Takeoff.</h2>
+                 <p className="text-xl md:text-2xl text-text-muted font-bold tracking-tight max-w-xl mx-auto leading-snug">
+                   Your account is ready. Now, upload your Malaysia Airlines roster PDF to sync your life.
+                 </p>
               </div>
               <div className="w-full max-w-2xl">
                 <FileUploader />

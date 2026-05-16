@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FileUp, Info } from 'lucide-react';
+import { FileUp, Info, Eye } from 'lucide-react';
 import { FileUploader } from '@/components/product/FileUploader';
+import Link from 'next/link';
 
 export const ProfileEmptyState = () => {
   return (
@@ -22,9 +23,17 @@ export const ProfileEmptyState = () => {
           <h2 className="text-4xl md:text-6xl font-bold tracking-tighter text-text mb-6">
             Reveal your passport.
           </h2>
-          <p className="text-text-muted text-xl font-bold leading-snug max-w-md mx-auto tracking-tight">
+          <p className="text-text-muted text-xl font-bold leading-snug max-w-md mx-auto tracking-tight mb-8">
             Drop your roster PDF to unlock every city you&apos;ve earned and sync your calendar instantly.
           </p>
+
+          <Link
+            href="/profile?demo=true"
+            className="inline-flex items-center gap-2 text-accent font-bold hover:underline mb-2"
+          >
+            <Eye size={18} />
+            View Demo Passport
+          </Link>
         </div>
 
         <FileUploader />

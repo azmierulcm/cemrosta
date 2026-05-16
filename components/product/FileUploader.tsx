@@ -30,7 +30,7 @@ export const FileUploader = () => {
 
     try {
       const result = await parseRoster(formData);
-      setRoster(result);
+      await setRoster(result);
       setLoading(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to parse roster');

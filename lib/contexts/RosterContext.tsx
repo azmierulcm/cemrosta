@@ -1,19 +1,23 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { RosterData } from '@/lib/types';
 import { extractDestinations } from '@/lib/utils/destinations';
 import { calculateKilometers, formatBlockHours } from '@/lib/utils/geo/haversine';
+import { useAuth } from './AuthContext';
+import { fetchUserRoster } from '@/lib/actions/roster';
 
 interface RosterContextType {
   roster: RosterData | null;
+  history: { month: string; year: string }[];
   isLoading: boolean;
   error: string | null;
-  setRoster: (roster: RosterData) => void;
+  setRoster: (roster: RosterData) => Promise<void>;
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
   reset: () => void;
   loadSampleRoster: () => void;
+  switchMonth: (month: string, year: string) => Promise<void>;
 }
 
 const RosterContext = createContext<RosterContextType | undefined>(undefined);
@@ -21,33 +25,13 @@ const RosterContext = createContext<RosterContextType | undefined>(undefined);
 const STORAGE_KEY = 'cemrosta-roster-storage';
 
 export function RosterProvider({ children }: { children: React.ReactNode }) {
-  const [roster, setRosterState] = useState<RosterData | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.state?.roster || null;
-      } catch (e) {
-        console.error('Failed to load roster from storage', e);
-        return null;
-      }
-    }
-    return null;
-  });
-  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
+  const [roster, setRosterState] = useState<RosterData | null>(null);
+  const [history, setHistory] = useState<{ month: string; year: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setErrorState] = useState<string | null>(null);
 
-  // No need for load useEffect anymore, but we still need the save useEffect
-  useEffect(() => {
-    if (roster) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: { roster } }));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }, [roster]);
-
-  const setRoster = (newRoster: RosterData) => {
+  const processRoster = useCallback((newRoster: RosterData): RosterData => {
     const destinations = extractDestinations(newRoster.events);
     const totalSectors = newRoster.events.filter((e) => e.type === 'FLIGHT').length;
     const totalDistance = newRoster.events.reduce((acc, e) => {
@@ -59,7 +43,7 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
     const totalBlockTime = formatBlockHours(newRoster.events);
     const uniqueDestinations = destinations.length;
 
-    setRosterState({
+    return {
       ...newRoster,
       destinations,
       stats: {
@@ -68,9 +52,77 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
         totalBlockTime,
         uniqueDestinations,
       },
-    });
+    };
+  }, []);
+
+  const setRoster = async (newRoster: RosterData) => {
+    const processed = processRoster(newRoster);
+    setRosterState(processed);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: { roster: processed } }));
+    
+    if (user) {
+      // Refresh history after a new upload/set
+      const result = await fetchUserRoster(user.id);
+      if (result) setHistory(result.history);
+    }
+    
     setIsLoading(false);
     setErrorState(null);
+  };
+
+  const fetchRoster = useCallback(async (uid: string, m?: string, y?: string) => {
+    setIsLoading(true);
+    try {
+      const result = await fetchUserRoster(uid, m, y);
+      if (result) {
+        const processed = processRoster(result.roster);
+        setRosterState(processed);
+        setHistory(result.history);
+        // Only save current/latest to local storage for quick reload
+        if (!m && !y) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: { roster: processed } }));
+        }
+      } else if (!m && !y) {
+        // Only check local storage if no user data found and no specific month requested
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed.state?.roster) setRosterState(parsed.state.roster);
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch roster', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [processRoster]);
+
+  useEffect(() => {
+    if (user) {
+      fetchRoster(user.id);
+    } else {
+      // Logged out: fallback to local storage
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.state?.roster) setRosterState(parsed.state.roster);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      setIsLoading(false);
+    }
+  }, [user, fetchRoster]);
+
+  const switchMonth = async (m: string, y: string) => {
+    if (user) {
+      await fetchRoster(user.id, m, y);
+    }
   };
 
   const setLoading = (loading: boolean) => setIsLoading(loading);
@@ -80,6 +132,7 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
   };
   const reset = () => {
     setRosterState(null);
+    localStorage.removeItem(STORAGE_KEY);
     setIsLoading(false);
     setErrorState(null);
   };
@@ -145,7 +198,6 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
           signOn: '14:25',
           sta: '18:30',
           signOff: '19:15',
-
         },
         {
           id: 'S2-353-28',
@@ -164,6 +216,7 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
     <RosterContext.Provider
       value={{
         roster,
+        history,
         isLoading,
         error,
         setRoster,
@@ -171,6 +224,7 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
         setError,
         reset,
         loadSampleRoster,
+        switchMonth,
       }}
     >
       {children}

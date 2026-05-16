@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { CheckCircle2, ShieldCheck, Zap, Heart } from 'lucide-react';
 import { HeroAnimation } from './HeroAnimation';
-import { FileUploader } from '../product/FileUploader';
+import { useAuth } from '@/lib/contexts/AuthContext';
 import { WaitlistSheet } from './WaitlistSheet';
 
 const FORMAT_PILLS = [
@@ -16,6 +16,7 @@ const FORMAT_PILLS = [
 
 export const LandingHero = () => {
   const shouldReduceMotion = useReducedMotion();
+  const { openAuthModal } = useAuth();
   const [waitlistAirline, setWaitlistAirline] = useState<string | null>(null);
   const rostersProcessed = 1242; // Seeded constant + real count logic would go here
 
@@ -37,8 +38,21 @@ export const LandingHero = () => {
           </h1>
           
           <p className="text-xl md:text-2xl text-text-muted mb-16 max-w-2xl mx-auto font-bold leading-tight tracking-tight">
-            Drop your Malaysia Airlines roster PDF. Get a synced calendar and a digital passport of every city you&apos;ve flown to.
+            The ultimate companion for MAS crew. Sync your calendar, track your destinations, and unlock verified marketplace deals.
           </p>
+
+          <div className="flex flex-col items-center gap-8 mb-20">
+            <button 
+              onClick={openAuthModal}
+              className="bg-accent text-white px-12 py-6 rounded-full font-black text-xl shadow-2xl shadow-accent/20 hover:bg-accent/90 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-4"
+            >
+              Get Started for Free
+              <Zap size={24} fill="currentColor" />
+            </button>
+            <p className="text-[10px] font-black text-text-subtle uppercase tracking-[0.3em] font-mono">
+              {"// SYNC IN SECONDS. NO MANUAL INPUT."}
+            </p>
+          </div>
         </motion.div>
 
         <motion.div
@@ -47,10 +61,8 @@ export const LandingHero = () => {
           transition={{ delay: 0.2, duration: 0.6 }}
           className="w-full max-w-2xl mb-16"
         >
-          <FileUploader />
-          
           {/* Format Pills */}
-          <div className="mt-10 flex flex-wrap justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-4">
              {FORMAT_PILLS.map((pill) => (
                <button
                  key={pill.name}

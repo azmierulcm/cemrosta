@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Plane, Clock, MapPin, Hotel, Download } from 'lucide-react';
+import { Plane, Clock, MapPin, Hotel, Download, ChevronDown, Loader2 } from 'lucide-react';
 import { useRoster } from '@/lib/contexts/RosterContext';
 import { DutyEvent } from '@/lib/types';
 import { generateICS, downloadICS } from '@/lib/utils/calendar';
@@ -114,7 +114,8 @@ export const EventCard = ({ event, index }: { event: DutyEvent; index: number })
 };
 
 export const Dashboard = () => {
-  const { roster, reset } = useRoster();
+  const { roster, history, switchMonth, reset, isLoading } = useRoster();
+  const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
 
   if (!roster) return null;
 
@@ -134,13 +135,54 @@ export const Dashboard = () => {
              <MapPin size={12} className="text-accent" />
              Live Mission Control
           </div>
-          <h2 className="text-5xl md:text-7xl font-bold tracking-tighter text-text">Your Schedule.</h2>
+          
+          <div className="relative inline-block text-left">
+            <button 
+              onClick={() => history.length > 1 && setIsHistoryOpen(!isHistoryOpen)}
+              className={`flex items-center gap-4 text-5xl md:text-7xl font-bold tracking-tighter text-text group ${history.length > 1 ? 'cursor-pointer' : 'cursor-default'}`}
+            >
+              {roster.month} {roster.year}
+              {history.length > 1 && (
+                <ChevronDown size={32} className={`text-text-subtle group-hover:text-accent transition-all duration-300 ${isHistoryOpen ? 'rotate-180' : ''}`} />
+              )}
+            </button>
+
+            {isHistoryOpen && history.length > 1 && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute left-0 mt-4 w-64 bg-white border border-border rounded-3xl shadow-2xl z-[100] overflow-hidden p-2"
+              >
+                {history.map((item) => (
+                  <button
+                    key={`${item.month}-${item.year}`}
+                    onClick={() => {
+                      switchMonth(item.month, item.year);
+                      setIsHistoryOpen(false);
+                    }}
+                    className={`w-full text-left px-6 py-4 rounded-2xl font-bold text-lg flex items-center justify-between transition-all ${
+                      roster.month === item.month && roster.year === item.year 
+                        ? 'bg-accent/5 text-accent' 
+                        : 'text-text-muted hover:bg-surface-2 hover:text-text'
+                    }`}
+                  >
+                    <span>{item.month} {item.year}</span>
+                    {roster.month === item.month && roster.year === item.year && (
+                      <div className="w-2 h-2 rounded-full bg-accent" />
+                    )}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </div>
+
           <p className="text-text-muted font-bold mt-3 text-lg tracking-tight">
-            {roster.month} {roster.year} <span className="mx-2 text-border">•</span> {roster.events.length} Assigned Events
+            {roster.events.length} Assigned Events <span className="mx-2 text-border">•</span> {roster.crewName}
           </p>
         </div>
         
         <div className="flex items-center gap-4">
+          {isLoading && <Loader2 className="animate-spin text-accent mr-4" />}
           <button 
             onClick={reset}
             className="px-8 py-4 rounded-full font-bold text-text-muted hover:bg-surface-2 hover:text-text transition-all active:scale-95 border border-transparent hover:border-border"
