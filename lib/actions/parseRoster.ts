@@ -110,13 +110,15 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
     if (!crewProfile) {
       const { data: newProfile, error: createError } = await supabase
         .from('crew_profiles')
-        .insert({
+        .upsert({
+          id: userId, // Use userId as the primary key for consistency
           user_id: userId,
           display_name: rosterData.crewName || 'Crew Member',
           rank: 'Crew', 
           base_iata: 'KUL',
           airline_code: 'MH',
-          handle: `crew.${userId.slice(0, 5)}`
+          handle: `crew.${userId.slice(0, 5)}`,
+          updated_at: new Date().toISOString()
         })
         .select('id')
         .single();
