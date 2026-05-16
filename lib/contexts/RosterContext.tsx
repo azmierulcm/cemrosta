@@ -7,6 +7,7 @@ import { calculateKilometers, formatBlockHours } from '@/lib/utils/geo/haversine
 import { useAuth } from './AuthContext';
 import { fetchUserRoster } from '@/lib/actions/roster';
 import { recomputeStats } from '@/lib/passport-stats';
+import { saveRosterData } from '@/lib/actions/parseRoster';
 
 interface RosterContextType {
   roster: RosterData | null;
@@ -14,6 +15,7 @@ interface RosterContextType {
   isLoading: boolean;
   error: string | null;
   setRoster: (roster: RosterData) => Promise<void>;
+  syncToSupabase: (data: RosterData) => Promise<{ success: boolean; error?: string }>;
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
   reset: () => void;
@@ -71,6 +73,27 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
     
     setIsLoading(false);
     setErrorState(null);
+  };
+
+  const syncToSupabase = async (data: RosterData) => {
+    if (!user) return { success: false, error: 'User not logged in' };
+    
+    setIsLoading(true);
+    try {
+      const result = await saveRosterData(user.id, data);
+      if (result.success) {
+        // Refresh history to include the new month
+        const histResult = await fetchUserRoster(user.id);
+        if (histResult) setHistory(histResult.history);
+        return { success: true };
+      }
+      return { success: false, error: result.error };
+    } catch (err) {
+      console.error('Sync error:', err);
+      return { success: false, error: 'Failed to sync with mission control' };
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const fetchRoster = useCallback(async (uid: string, m?: string, y?: string, includePrevious: boolean = false) => {
@@ -236,6 +259,7 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         error,
         setRoster,
+        syncToSupabase,
         setLoading,
         setError,
         reset,

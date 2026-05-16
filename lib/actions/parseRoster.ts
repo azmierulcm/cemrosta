@@ -8,16 +8,16 @@ import { generateICS } from '@/lib/utils/calendar';
 import { recomputeStats } from '@/lib/passport-stats';
 import { calculateKilometers, calculateBlockMinutes } from '@/lib/utils/geo/haversine';
 
+/**
+ * Step 1: Just parse the PDF and return data to the client for preview.
+ */
 export async function parseRoster(formData: FormData): Promise<RosterData> {
   const file = formData.get('file') as File;
-  const userId = formData.get('userId') as string;
   
   if (!file) throw new Error('No file uploaded');
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = new Uint8Array(arrayBuffer);
-  
-  const supabase = getSupabaseServer();
   
   try {
     const pdf = await getDocumentProxy(buffer);
@@ -69,7 +69,6 @@ export async function parseRoster(formData: FormData): Promise<RosterData> {
             year: pyData.year,
             crewName: pyData.crew_name,
           };
-          console.log('Successfully parsed using Python service');
         } else {
           throw new Error('Python service failed');
         }
@@ -81,104 +80,109 @@ export async function parseRoster(formData: FormData): Promise<RosterData> {
       rosterData = parseUsingTS(text);
     }
 
-    // Persistence Logic: If userId is provided, sync to Supabase
-    if (userId) {
-      // 1. Update Profile (Airline Verification)
-      await supabase
-        .from('profiles')
-        .update({ 
-          verified_at: new Date().toISOString(),
-          airline: 'Malaysia Airlines' // Hardcoded for now, could be in rosterData
-        })
-        .eq('id', userId);
-
-      // 2. Ensure Crew Profile exists
-      let { data: crewProfile } = await supabase
-        .from('crew_profiles')
-        .select('id')
-        .eq('user_id', userId)
-        .single();
-
-      if (!crewProfile) {
-        const { data: newProfile, error: createError } = await supabase
-          .from('crew_profiles')
-          .insert({
-            user_id: userId,
-            display_name: rosterData.crewName || 'Crew Member',
-            rank: 'Crew', 
-            base_iata: 'KUL',
-            airline_code: 'MH',
-            handle: `crew.${userId.slice(0, 5)}`
-          })
-          .select('id')
-          .single();
-        
-        if (createError) console.error('Failed to create crew profile', createError);
-        crewProfile = newProfile;
-      }
-
-      // 3. Save All Duties
-      if (crewProfile) {
-        const eventsToInsert = rosterData.events.map(e => {
-          // Construct proper ISO timestamps for Supabase (std_utc, sta_utc)
-          const combineDateAndTime = (dateStr: string, timeStr?: string) => {
-            if (!timeStr || timeStr === '--:--') return new Date(`${dateStr}T00:00:00Z`).toISOString();
-            // Handle MH format HH:MM
-            return new Date(`${dateStr}T${timeStr}:00Z`).toISOString();
-          };
-
-          return {
-            crew_id: crewProfile.id,
-            flight_date: e.date,
-            flight_number: e.flightNumber || `DUTY-${e.type}-${e.id.slice(-4)}`,
-            origin_iata: e.depPort || 'KUL',
-            destination_iata: e.arrPort || 'KUL',
-            std_utc: combineDateAndTime(e.date, e.std || e.signOn),
-            sta_utc: combineDateAndTime(e.date, e.sta || e.signOff),
-            block_minutes: e.type === 'FLIGHT' && e.std && e.sta ? calculateBlockMinutes(e.std, e.sta) : 0,
-            distance_km: e.type === 'FLIGHT' && e.depPort && e.arrPort ? calculateKilometers(e.depPort, e.arrPort) : 0,
-            aircraft_type: e.aircraftType || 'B737',
-            duty_type: e.type.toLowerCase()
-          };
-        });
-
-        if (eventsToInsert.length > 0) {
-          const { error: flightError } = await supabase
-            .from('flights')
-            .upsert(eventsToInsert, { onConflict: 'crew_id, flight_date, flight_number' });
-          
-          if (flightError) {
-            console.error('Failed to sync duties to Supabase:', flightError.message, flightError.details);
-          }
-        }
-
-        // 3b. Recompute Stats & Achievements
-        await recomputeStats(crewProfile.id);
-
-        // 4. Generate and Store ICS File
-        const icsContent = generateICS(rosterData);
-        if (icsContent) {
-          const filename = `${rosterData.year}-${rosterData.month}.ics`;
-          const icsPath = `${userId}/rosters/${filename}`;
-          
-          const { error: uploadError } = await supabase.storage
-            .from('roster-files')
-            .upload(icsPath, icsContent, {
-              contentType: 'text/calendar',
-              upsert: true
-            });
-
-          if (uploadError) {
-            console.error('Failed to store ICS file:', uploadError.message);
-          }
-        }
-      }
-    }
-
     return rosterData;
   } catch (err) {
     console.error('PDF Parse Error:', err);
     throw new Error(err instanceof Error ? err.message : 'Could not read PDF roster.');
+  }
+}
+
+/**
+ * Step 2: Explicitly save the confirmed roster data to Supabase.
+ */
+export async function saveRosterData(userId: string, rosterData: RosterData) {
+  const supabase = getSupabaseServer();
+  
+  try {
+    // 1. Update Profile (Airline Verification)
+    await supabase
+      .from('profiles')
+      .update({ 
+        verified_at: new Date().toISOString(),
+        airline: 'Malaysia Airlines'
+      })
+      .eq('id', userId);
+
+    // 2. Ensure Crew Profile exists
+    let { data: crewProfile } = await supabase
+      .from('crew_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
+
+    if (!crewProfile) {
+      const { data: newProfile, error: createError } = await supabase
+        .from('crew_profiles')
+        .insert({
+          user_id: userId,
+          display_name: rosterData.crewName || 'Crew Member',
+          rank: 'Crew', 
+          base_iata: 'KUL',
+          airline_code: 'MH',
+          handle: `crew.${userId.slice(0, 5)}`
+        })
+        .select('id')
+        .single();
+      
+      if (createError) throw createError;
+      crewProfile = newProfile;
+    }
+
+    // 3. Save All Duties
+    if (crewProfile) {
+      const eventsToInsert = rosterData.events.map(e => {
+        const combineDateAndTime = (dateStr: string, timeStr?: string) => {
+          if (!timeStr || timeStr === '--:--') return new Date(`${dateStr}T00:00:00Z`).toISOString();
+          return new Date(`${dateStr}T${timeStr}:00Z`).toISOString();
+        };
+
+        return {
+          crew_id: crewProfile.id,
+          flight_date: e.date,
+          flight_number: e.flightNumber || `DUTY-${e.type}-${e.id.slice(-4)}`,
+          origin_iata: e.depPort || 'KUL',
+          destination_iata: e.arrPort || 'KUL',
+          std_utc: combineDateAndTime(e.date, e.std || e.signOn),
+          sta_utc: combineDateAndTime(e.date, e.sta || e.signOff),
+          block_minutes: e.type === 'FLIGHT' && e.std && e.sta ? calculateBlockMinutes(e.std, e.sta) : 0,
+          distance_km: e.type === 'FLIGHT' && e.depPort && e.arrPort ? calculateKilometers(e.depPort, e.arrPort) : 0,
+          aircraft_type: e.aircraftType || 'B737',
+          duty_type: e.type.toLowerCase()
+        };
+      });
+
+      if (eventsToInsert.length > 0) {
+        const { error: flightError } = await supabase
+          .from('flights')
+          .upsert(eventsToInsert, { onConflict: 'crew_id, flight_date, flight_number' });
+        
+        if (flightError) throw flightError;
+      }
+
+      // 3b. Recompute Stats & Achievements
+      await recomputeStats(crewProfile.id);
+
+      // 4. Generate and Store ICS File
+      const icsContent = generateICS(rosterData);
+      if (icsContent) {
+        const filename = `${rosterData.year}-${rosterData.month}.ics`;
+        const icsPath = `${userId}/rosters/${filename}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('roster-files')
+          .upload(icsPath, icsContent, {
+            contentType: 'text/calendar',
+            upsert: true
+          });
+
+        if (uploadError) console.error('ICS Upload Error:', uploadError.message);
+      }
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error('Save Roster Error:', err);
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to save roster' };
   }
 }
 
