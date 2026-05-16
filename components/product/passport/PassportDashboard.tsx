@@ -11,6 +11,8 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import Link from 'next/link';
 import { CrewCard } from './CrewCard';
 import { CrewProfile } from '@/lib/types/passport';
+import { supabase } from '@/lib/utils/supabase';
+import { toPng } from 'html-to-image';
 
 interface DashboardProps {
   stats: CrewStats;
@@ -42,22 +44,41 @@ const StatCard = ({ label, value, sub, icon: Icon }: StatCardProps) => (
 export const PassportDashboard = ({ stats, earnedAchievements = [] }: DashboardProps) => {
   const { user } = useAuth();
   const [isShareModalOpen, setIsShareModalOpen] = React.useState(false);
+  const [crewProfile, setCrewProfile] = React.useState<CrewProfile | null>(null);
+  const cardRef = React.useRef<HTMLDivElement>(null);
   const earnedSet = new Set(earnedAchievements);
 
-  const mockProfile: CrewProfile = {
-    id: 'demo',
-    user_id: 'demo',
-    display_name: 'Muhammad Azmierul',
-    rank: 'First Officer',
-    base_iata: 'KUL',
-    airline_code: 'MH',
-    aircraft_types: ['A350', 'A330'],
-    handle: 'azmierul.fo',
-    avatar_url: null,
-    hire_date: '2020-05-15',
-    birthday: null,
-    privacy_mode: 'public',
-    created_at: new Date().toISOString()
+  React.useEffect(() => {
+    if (user) {
+      supabase
+        .from('crew_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) setCrewProfile(data as CrewProfile);
+        });
+    }
+  }, [user]);
+
+  const handleDownloadCard = async () => {
+    if (cardRef.current === null) return;
+    
+    try {
+      const dataUrl = await toPng(cardRef.current, { 
+        cacheBust: true,
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left'
+        }
+      });
+      const link = document.createElement('a');
+      link.download = `cemrosta-crew-card-${crewProfile?.handle || 'passport'}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Failed to generate image', err);
+    }
   };
 
   return (
@@ -134,8 +155,8 @@ export const PassportDashboard = ({ stats, earnedAchievements = [] }: DashboardP
             {/* Crew Trading Card Feature */}
             <div className="bg-white rounded-[3.5rem] p-12 md:p-16 border border-border flex flex-col md:flex-row items-center gap-16 mt-32 shadow-2xl shadow-black/5 relative overflow-hidden group">
                <div className="absolute top-0 right-0 w-64 h-64 bg-accent/3 blur-[80px] -mr-32 -mt-32 rounded-full" />
-               <div className="scale-90 md:scale-110 origin-center shrink-0 relative z-10">
-                  <CrewCard profile={mockProfile} stats={stats} />
+               <div className="scale-90 md:scale-110 origin-center shrink-0 relative z-10" ref={cardRef}>
+                  <CrewCard profile={crewProfile || {} as any} stats={stats} />
                </div>
                <div className="flex-1 text-center md:text-left relative z-10">
                   <h3 className="text-4xl font-black mb-6 tracking-tighter text-text uppercase italic">Your Digital Asset.</h3>
@@ -144,10 +165,16 @@ export const PassportDashboard = ({ stats, earnedAchievements = [] }: DashboardP
                      Exchange with colleagues to build your global aviation network.
                   </p>
                   <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                     <button className="bg-accent text-accent-fg px-10 py-5 rounded-full font-black text-sm flex items-center gap-3 hover:scale-105 transition-all shadow-xl shadow-accent/20">
+                     <button 
+                       onClick={() => setIsShareModalOpen(true)}
+                       className="bg-accent text-accent-fg px-10 py-5 rounded-full font-black text-sm flex items-center gap-3 hover:scale-105 transition-all shadow-xl shadow-accent/20"
+                     >
                         Exchange Card
                      </button>
-                     <button className="bg-surface-2 text-text border border-border px-10 py-5 rounded-full font-black text-sm flex items-center gap-3 hover:bg-border transition-all">
+                     <button 
+                       onClick={handleDownloadCard}
+                       className="bg-surface-2 text-text border border-border px-10 py-5 rounded-full font-black text-sm flex items-center gap-3 hover:bg-border transition-all"
+                     >
                         Download PNG
                      </button>
                   </div>
