@@ -83,10 +83,10 @@ export const RecapCardModal = ({ isOpen, onClose, userId, month, year }: RecapCa
 
                <div className={`relative bg-white rounded-3xl overflow-hidden shadow-2xl border border-border transition-all duration-700 ${view === 'stories' ? 'aspect-[9/16] h-[550px]' : 'aspect-[1.91/1] w-full max-w-lg'}`}>
                   <img 
+                    key={`${currentUrl}-${view}`}
                     src={currentUrl} 
                     alt="Recap Preview" 
                     className="w-full h-full object-cover"
-                    loading="lazy"
                   />
                   <div className="absolute inset-0 pointer-events-none border-[12px] border-white/5 opacity-20" />
                </div>

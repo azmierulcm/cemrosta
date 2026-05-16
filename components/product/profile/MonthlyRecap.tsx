@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { formatBlockHours } from '@/lib/utils/format';
 import { Sparkles, Calendar } from 'lucide-react';
 import { RecapCardModal } from './RecapCardModal';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface MonthlyRecapProps {
   recap: {
@@ -17,6 +18,7 @@ interface MonthlyRecapProps {
 
 export const MonthlyRecap = ({ recap }: MonthlyRecapProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
     <>
@@ -71,7 +73,7 @@ export const MonthlyRecap = ({ recap }: MonthlyRecapProps) => {
       <RecapCardModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        userId="demo-user" // placeholder
+        userId={user?.id || 'demo-user'} 
         month={recap.month}
         year={recap.year}
       />
