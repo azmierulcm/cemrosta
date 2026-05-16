@@ -21,6 +21,7 @@ interface RosterContextType {
   reset: () => void;
   loadSampleRoster: () => void;
   switchMonth: (month: string, year: string, includePrevious?: boolean) => Promise<void>;
+  deleteRosterMonth: (month: string, year: string) => Promise<void>;
   refresh: () => Promise<void>;
   refreshStats: () => Promise<void>;
 }
@@ -152,6 +153,32 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const deleteRosterMonth = async (m: string, y: string) => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      const result = await deleteMonthlyRoster(user.id, m, y);
+      if (result.success) {
+        // Fetch remaining history to redirect if needed
+        const histResult = await fetchUserRoster(user.id);
+        if (histResult) {
+          setHistory(histResult.history);
+          if (histResult.history.length > 0) {
+            // Switch to latest available month
+            await fetchRoster(user.id, histResult.history[0].month, histResult.history[0].year);
+          } else {
+            // No history left, clear state
+            setRosterState(null);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const refresh = async () => {
     if (user) {
       await fetchRoster(user.id, roster?.month, roster?.year);
@@ -265,6 +292,7 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
         reset,
         loadSampleRoster,
         switchMonth,
+        deleteRosterMonth,
         refresh,
         refreshStats,
       }}

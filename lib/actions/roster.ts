@@ -174,6 +174,55 @@ export async function deleteDuty(dutyId: string) {
   }
 }
 
+export async function deleteMonthlyRoster(userId: string, month: string, year: string) {
+  const supabase = getSupabaseServer();
+  try {
+    // 1. Get Crew Profile ID
+    const { data: profile } = await supabase
+      .from('crew_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
+
+    if (!profile) throw new Error('Profile not found');
+
+    // 2. Fetch all flights for this user to filter manually by month name
+    // (Filtering by month name is safer since we store ISO dates)
+    const { data: flights, error: fetchError } = await supabase
+      .from('flights')
+      .select('id, flight_date')
+      .eq('crew_id', profile.id);
+
+    if (fetchError) throw fetchError;
+
+    const normalizeMonth = (m: string) => m.toLowerCase().slice(0, 3);
+    const targetMonthNorm = normalizeMonth(month);
+
+    const idsToDelete = (flights || [])
+      .filter(f => {
+        const d = new Date(f.flight_date);
+        const m = d.toLocaleString('en-US', { month: 'short' });
+        return normalizeMonth(m) === targetMonthNorm && d.getFullYear().toString() === year;
+      })
+      .map(f => f.id);
+
+    if (idsToDelete.length === 0) return { success: true, count: 0 };
+
+    // 3. Delete those flights
+    const { error: deleteError } = await supabase
+      .from('flights')
+      .delete()
+      .in('id', idsToDelete);
+
+    if (deleteError) throw deleteError;
+
+    return { success: true, count: idsToDelete.length };
+  } catch (err) {
+    console.error('Delete Monthly Roster Error:', err);
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+  }
+}
+
 export async function updateUserProfile(userId: string, updates: any) {
   const supabase = getSupabaseServer();
   try {
