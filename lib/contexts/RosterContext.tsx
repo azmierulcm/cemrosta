@@ -98,7 +98,11 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
   };
 
   const fetchRoster = useCallback(async (uid: string, m?: string, y?: string, includePrevious: boolean = false) => {
-    setTimeout(() => setIsLoading(true), 0);
+    // Only trigger global loading if we don't have any data to show yet
+    if (!roster) {
+      setTimeout(() => setIsLoading(true), 0);
+    }
+    
     try {
       const result = await fetchUserRoster(uid, m, y, includePrevious);
       if (result) {
@@ -129,20 +133,25 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
   }, [processRoster]);
 
   useEffect(() => {
+    // 1. Immediate Cache Load (Optimistic UI)
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.state?.roster) {
+          setRosterState(parsed.state.roster);
+          // If we have cached data, we can potentially lower the loading priority
+        }
+      } catch (e) {
+        console.error('Cache load failed', e);
+      }
+    }
+
+    // 2. Network Sync
     if (user) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchRoster(user.id);
     } else {
-      // Logged out: fallback to local storage
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed.state?.roster) setRosterState(parsed.state.roster);
-        } catch (e) {
-          console.error(e);
-        }
-      }
       setIsLoading(false);
     }
   }, [user, fetchRoster]);

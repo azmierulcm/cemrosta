@@ -42,20 +42,6 @@ export default function HomeClient() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [setUser]);
-
   return (
     <main id="main-content" className="min-h-screen bg-surface-2 selection:bg-accent/30 selection:text-accent-fg flex flex-col">
       <Navbar />
