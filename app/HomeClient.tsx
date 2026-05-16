@@ -63,8 +63,8 @@ export default function HomeClient() {
       
       <div className="flex-1">
         <AnimatePresence mode="wait">
-          {/* Global Loading State */}
-          {(authLoading || rosterLoading) ? (
+          {/* Auth Loading State - Only show full screen loader for initial auth check */}
+          {authLoading ? (
             <motion.div
               key="loading"
               initial={{ opacity: 0 }}
@@ -88,6 +88,18 @@ export default function HomeClient() {
               <HowItWorks />
               <AudienceSection />
               <PricingCTA />
+            </motion.div>
+          ) : (rosterLoading && !roster) ? (
+            /* Initial data fetch when user is logged in but no roster state yet */
+            <motion.div
+              key="data-fetching"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="min-h-screen flex flex-col items-center justify-center gap-6"
+            >
+              <Loader2 className="w-12 h-12 animate-spin text-accent" />
+              <p className="text-[10px] font-black text-text-subtle uppercase tracking-[0.4em] font-mono animate-pulse">Fetching Mission Data...</p>
             </motion.div>
           ) : (!roster || roster.events.length === 0) ? (
             /* Scenario 2: User is logged in but has NO roster events - Show Upload Zone */
