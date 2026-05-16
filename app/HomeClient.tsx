@@ -1,19 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Navbar from '@/components/shared/Navbar';
-import LandingHero from '@/components/marketing/LandingHero';
-import ComparisonSection from '@/components/marketing/ComparisonSection';
-import HowItWorks from '@/components/marketing/HowItWorks';
-import AudienceSection from '@/components/marketing/AudienceSection';
-import PricingCTA from '@/components/marketing/PricingCTA';
-import Dashboard from '@/components/product/Dashboard';
-import FileUploader from '@/components/product/FileUploader';
-import Footer from '@/components/shared/Footer';
+import { Navbar } from '@/components/shared/Navbar';
+import { LandingHero } from '@/components/marketing/LandingHero';
+import { ComparisonSection } from '@/components/marketing/ComparisonSection';
+import { HowItWorks } from '@/components/marketing/HowItWorks';
+import { AudienceSection } from '@/components/marketing/AudienceSection';
+import { PricingCTA } from '@/components/marketing/PricingCTA';
+import { Dashboard } from '@/components/product/Dashboard';
+import { FileUploader } from '@/components/product/FileUploader';
+import { Footer } from '@/components/shared/Footer';
 import { useRoster } from '@/lib/contexts/RosterContext';
-import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
-import AuthModal from '@/components/shared/AuthModal';
+import { AuthModal } from '@/components/shared/AuthModal';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { supabase } from '@/lib/utils/supabase';
 import { Upload } from 'lucide-react';
@@ -42,7 +42,7 @@ export default function HomeClient() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -57,7 +57,7 @@ export default function HomeClient() {
   }, [setUser]);
 
   return (
-    <main id="main-content" className="min-h-screen bg-bg selection:bg-accent/30 selection:text-accent-fg flex flex-col">
+    <main id="main-content" className="min-h-screen bg-surface-2 selection:bg-accent/30 selection:text-accent-fg flex flex-col">
       <Navbar />
       <AuthModal />
       
@@ -85,9 +85,12 @@ export default function HomeClient() {
               animate={{ opacity: 1, scale: 1 }}
               className="pt-40 pb-20 px-4 min-h-[100svh] flex flex-col items-center justify-center"
             >
-              <div className="max-w-4xl mx-auto text-center mb-12">
-                 <h2 className="text-4xl md:text-6xl font-bold text-text mb-6 tracking-tighter">Welcome aboard.</h2>
-                 <p className="text-xl text-text-muted font-medium">To begin your journey, please upload your monthly roster PDF.</p>
+              <div className="max-w-4xl mx-auto text-center mb-16">
+                 <div className="flex items-center justify-center gap-2 mb-6 text-[10px] font-black uppercase tracking-[0.4em] text-text-subtle font-mono">
+                   {"// WELCOME CREW MEMBER"}
+                 </div>
+                 <h2 className="text-5xl md:text-8xl font-bold text-text mb-8 tracking-tighter">Welcome aboard.</h2>
+                 <p className="text-xl md:text-2xl text-text-muted font-bold tracking-tight max-w-xl mx-auto leading-snug">To begin your journey, please upload your monthly roster PDF.</p>
               </div>
               <div className="w-full max-w-2xl">
                 <FileUploader />
@@ -117,11 +120,11 @@ export default function HomeClient() {
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
-              className="fixed bottom-6 left-4 right-4 z-[60] md:hidden"
+              className="fixed bottom-8 left-4 right-4 z-[60] md:hidden"
             >
               <button 
                 onClick={scrollToTop}
-                className="w-full bg-accent text-accent-fg py-5 rounded-2xl font-bold text-lg shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
+                className="w-full bg-accent text-accent-fg py-6 rounded-full font-black text-lg shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
               >
                 <Upload size={20} strokeWidth={3} />
                 Upload roster

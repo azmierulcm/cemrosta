@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Navbar from '@/components/shared/Navbar';
-import PassportDashboard from '@/components/product/passport/PassportDashboard';
+import { Navbar } from '@/components/shared/Navbar';
+import { PassportDashboard } from '@/components/product/passport/PassportDashboard';
 import { supabase } from '@/lib/utils/supabase';
 import { CrewStats } from '@/lib/types/passport';
 import { useAuth } from '@/lib/contexts/AuthContext';

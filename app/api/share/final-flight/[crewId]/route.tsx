@@ -7,7 +7,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ crewId: string }> }
 ) {
-  const { crewId } = await params;
+  await params;
 
   return new ImageResponse(
     (

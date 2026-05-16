@@ -1,16 +1,16 @@
 import React from 'react';
 import { useRoster } from '@/lib/contexts/RosterContext';
 import { motion } from 'framer-motion';
-import { Plane } from 'lucide-react';
+import { DutyEvent } from '@/lib/types';
 
-const DutyCalendar = () => {
+export const DutyCalendar = () => {
   const { roster } = useRoster();
   if (!roster) return null;
 
   const eventsByDate = roster.events.reduce((acc, event) => {
     acc[event.date] = event;
     return acc;
-  }, {} as Record<string, any>);
+  }, {} as Record<string, DutyEvent>);
 
   // Determine month/year
   const [firstEvent] = roster.events;
@@ -35,24 +35,24 @@ const DutyCalendar = () => {
   const calendarPadding = Array.from({ length: firstDayOfMonth }, (_, i) => i);
 
   return (
-    <div className="bg-bg rounded-[2rem] p-8 shadow-xl border border-border">
-      <div className="flex items-center justify-between mb-8">
-        <h3 className="text-xl font-bold text-text">Duty Calendar</h3>
-        <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-text-subtle">
+    <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-10 gap-6">
+        <h3 className="text-xl font-bold text-text tracking-tight uppercase italic">Duty Map.</h3>
+        <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.15em] text-text-subtle font-mono">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-accent/10 border border-accent/20" />
-            Duty
+            <div className="w-2.5 h-2.5 rounded-full bg-accent/20 border border-accent/30" />
+            Mission
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-surface border border-border" />
-            Off
+            <div className="w-2.5 h-2.5 rounded-full bg-surface-2 border border-border" />
+            Standby
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-2">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-          <div key={d} className="text-center text-[10px] font-bold text-text-subtle uppercase py-2">
+      <div className="grid grid-cols-7 gap-3">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
+          <div key={d} className="text-center text-[10px] font-black text-text-subtle/50 uppercase py-2 font-mono">
             {d}
           </div>
         ))}
@@ -62,19 +62,19 @@ const DutyCalendar = () => {
         {days.map(day => (
           <motion.div
             key={day.date}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.15, zIndex: 10, backgroundColor: 'var(--color-surface-2)' }}
             className={`
-              aspect-square rounded-2xl flex flex-col items-center justify-center relative cursor-pointer
-              transition-all duration-200
+              aspect-square rounded-xl flex flex-col items-center justify-center relative cursor-pointer
+              transition-all duration-300 border
               ${day.event 
-                ? 'bg-accent/5 border-2 border-accent/20 text-accent' 
-                : 'bg-bg border border-border text-text-subtle hover:border-gray-300'}
+                ? 'bg-accent/5 border-accent/10 text-accent font-black shadow-sm' 
+                : 'bg-white border-transparent text-text-muted hover:border-border'}
             `}
           >
-            <span className="text-sm font-bold">{day.dayNum}</span>
+            <span className="text-sm font-mono">{day.dayNum}</span>
             {day.event && (
               <div className="absolute bottom-2">
-                <div className="w-1 h-1 rounded-full bg-accent" />
+                <div className="w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(255,56,92,0.5)]" />
               </div>
             )}
           </motion.div>
@@ -83,5 +83,3 @@ const DutyCalendar = () => {
     </div>
   );
 };
-
-export default DutyCalendar;

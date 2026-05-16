@@ -7,7 +7,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ achievementId: string }> }
 ) {
-  const { achievementId } = await params;
+  await params;
   
   // Mock achievement detail
   const achievement = {

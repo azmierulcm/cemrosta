@@ -7,7 +7,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ crewId: string; year: string; month: string }> }
 ) {
-  const { crewId, year, month } = await params;
+  const { year, month } = await params;
   const { searchParams } = new URL(req.url);
   const format = searchParams.get('format') || 'story';
 

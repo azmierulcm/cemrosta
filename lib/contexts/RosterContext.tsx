@@ -21,26 +21,24 @@ const RosterContext = createContext<RosterContextType | undefined>(undefined);
 const STORAGE_KEY = 'cemrosta-roster-storage';
 
 export function RosterProvider({ children }: { children: React.ReactNode }) {
-  const [roster, setRosterState] = useState<RosterData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setErrorState] = useState<string | null>(null);
-
-  // Load from localStorage on mount
-  useEffect(() => {
+  const [roster, setRosterState] = useState<RosterData | null>(() => {
+    if (typeof window === 'undefined') return null;
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.state?.roster) {
-          setRosterState(parsed.state.roster);
-        }
+        return parsed.state?.roster || null;
       } catch (e) {
         console.error('Failed to load roster from storage', e);
+        return null;
       }
     }
-  }, []);
+    return null;
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setErrorState] = useState<string | null>(null);
 
-  // Save to localStorage whenever roster changes
+  // No need for load useEffect anymore, but we still need the save useEffect
   useEffect(() => {
     if (roster) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: { roster } }));

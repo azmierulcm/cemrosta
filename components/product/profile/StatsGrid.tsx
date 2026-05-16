@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { RosterStats } from '@/lib/types';
 
-const StatsGrid = ({ stats }: { stats: RosterStats }) => {
+export const StatsGrid = ({ stats }: { stats: RosterStats }) => {
   const items = [
     { label: 'Sectors Flown', value: stats.totalSectors, unit: 'Flights' },
     { label: 'Air Distance', value: stats.totalMiles.toLocaleString(), unit: 'KM' },
@@ -18,21 +18,19 @@ const StatsGrid = ({ stats }: { stats: RosterStats }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
-          className="bg-bg p-8 rounded-[2rem] border border-border shadow-sm hover:shadow-md transition-shadow"
+          className="bg-white p-8 rounded-[2rem] border border-border shadow-sm hover:shadow-xl hover:shadow-black/5 transition-all"
         >
-          <p className="text-[10px] font-bold text-text-subtle uppercase tracking-widest mb-3">
+          <p className="text-[10px] font-black text-text-subtle uppercase tracking-[0.2em] mb-4 font-mono">
             {item.label}
           </p>
-          <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-black text-text tracking-tighter">
+          <div className="flex items-baseline gap-2">
+            <span className="text-4xl font-black text-text tracking-tighter">
               {item.value}
             </span>
-            <span className="text-xs font-bold text-accent uppercase">{item.unit}</span>
+            <span className="text-xs font-black text-accent uppercase tracking-tighter">{item.unit}</span>
           </div>
         </motion.div>
       ))}
     </div>
   );
 };
-
-export default StatsGrid;

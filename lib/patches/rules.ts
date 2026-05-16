@@ -89,10 +89,12 @@ export const RARITY_COLORS: Record<RarityTier, string> = {
   Platinum: '#93C5FD', // Light blue/white metallic
 };
 
+import { DutyEvent } from '../types';
+
 /**
  * Logic to calculate visits from a list of duty events
  */
-export function calculateVisits(iata: string, events: any[]): number {
+export function calculateVisits(iata: string, events: DutyEvent[]): number {
   if (iata === 'KUL') {
     // Count every time KUL is the final arrPort of a day or duty period
     return events.filter(e => e.type === 'FLIGHT' && e.arrPort === 'KUL').length;

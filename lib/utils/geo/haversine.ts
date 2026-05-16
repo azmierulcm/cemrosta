@@ -1,3 +1,5 @@
+import { DutyEvent } from '../../types';
+
 // IATA coordinates database for distance calculations (Lat, Lon)
 const IATA_COORDS: Record<string, [number, number]> = {
   'KUL': [2.7456, 101.7099],
@@ -35,7 +37,9 @@ export function calculateKilometers(depIata: string, arrIata: string): number {
   return Math.round(R * c);
 }
 
-export function formatBlockHours(events: any[]): string {
+import { DutyEvent } from '../../types';
+
+export function formatBlockHours(events: DutyEvent[]): string {
   let totalMinutes = 0;
   events.forEach(e => {
     if (e.type === 'FLIGHT' && e.std && e.sta) {

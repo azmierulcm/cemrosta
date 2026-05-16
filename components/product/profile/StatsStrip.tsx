@@ -14,11 +14,18 @@ interface StatsStripProps {
   };
 }
 
-const StatCard = ({ label, value, sub, icon: Icon }: any) => (
-  <div className="bg-surface p-8 rounded-[2rem] border border-border flex flex-col gap-4 group">
+interface StatCardProps {
+  label: string;
+  value: string | number;
+  sub?: string;
+  icon: React.ElementType;
+}
+
+const StatCard = ({ label, value, sub, icon: Icon }: StatCardProps) => (
+  <div className="bg-white p-8 rounded-[2rem] border border-border flex flex-col gap-6 group shadow-sm hover:shadow-xl hover:shadow-black/5 transition-all">
     <div className="flex justify-between items-start">
-      <div className="w-10 h-10 rounded-xl bg-bg border border-border flex items-center justify-center group-hover:border-accent/30 transition-colors">
-        <Icon size={20} className="text-text-muted group-hover:text-accent transition-colors" />
+      <div className="w-12 h-12 rounded-2xl bg-surface-2 border border-border flex items-center justify-center group-hover:border-accent/30 transition-colors">
+        <Icon size={22} className="text-text-muted group-hover:text-accent transition-colors" />
       </div>
       <span className="text-[10px] font-black uppercase tracking-[0.3em] text-text-subtle font-mono">{label}</span>
     </div>
@@ -29,9 +36,9 @@ const StatCard = ({ label, value, sub, icon: Icon }: any) => (
   </div>
 );
 
-const StatsStrip = ({ stats }: StatsStripProps) => {
+export const StatsStrip = ({ stats }: StatsStripProps) => {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
       <StatCard 
         label="Sectors" 
         value={stats.sectors.toLocaleString()} 
@@ -57,5 +64,3 @@ const StatsStrip = ({ stats }: StatsStripProps) => {
     </div>
   );
 };
-
-export default StatsStrip;

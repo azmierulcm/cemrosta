@@ -6,7 +6,30 @@ const accent = '#00D4FF';
 const text = '#F4F5F7';
 const textMuted = '#9CA0AD';
 
-export const StoriesTemplate = ({ data, superlative, watermark = true }: any) => {
+export interface RecapData {
+  month: string;
+  year: string;
+  heroValue: string | number;
+  heroLabel: string;
+  sectors: number;
+  hours: string;
+  km: string;
+  handle?: string;
+}
+
+export interface Superlative {
+  label: string;
+  value: string;
+  subValue: string;
+}
+
+interface TemplateProps {
+  data: RecapData;
+  superlative: Superlative;
+  watermark?: boolean;
+}
+
+export const StoriesTemplate = ({ data, superlative, watermark = true }: TemplateProps) => {
   return (
     <div
       style={{
@@ -77,7 +100,7 @@ export const StoriesTemplate = ({ data, superlative, watermark = true }: any) =>
   );
 };
 
-export const CardTemplate = ({ data, superlative, watermark = true }: any) => {
+export const CardTemplate = ({ data, superlative, watermark = true }: TemplateProps) => {
   return (
     <div
       style={{

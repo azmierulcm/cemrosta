@@ -1,16 +1,19 @@
 'use client';
 
 import React from 'react';
-import ProfileHeader from './ProfileHeader';
-import StatsStrip from './StatsStrip';
-import MonthlyRecap from './MonthlyRecap';
-import DestinationsGrid from './DestinationsGrid';
+import { ProfileHeader } from './ProfileHeader';
+import { StatsStrip } from './StatsStrip';
+import { MonthlyRecap } from './MonthlyRecap';
+import { DestinationsGrid } from './DestinationsGrid';
+
+import { ProfileData } from '@/lib/types';
 
 interface ProfileFilledProps {
-  data: any;
+  data: ProfileData;
+  onEdit?: () => void;
 }
 
-const ProfileFilled = ({ data }: ProfileFilledProps) => {
+export const ProfileFilled = ({ data, onEdit }: ProfileFilledProps) => {
   return (
     <div className="max-w-7xl mx-auto px-4 pt-32 pb-32 space-y-12 md:space-y-16">
       <ProfileHeader 
@@ -18,6 +21,7 @@ const ProfileFilled = ({ data }: ProfileFilledProps) => {
         role={data.role}
         homeBase={data.homeBase}
         aircraftType={data.aircraftType}
+        onEdit={onEdit}
       />
 
       <StatsStrip stats={data.lifetimeStats} />
@@ -39,4 +43,4 @@ const ProfileFilled = ({ data }: ProfileFilledProps) => {
   );
 };
 
-export default ProfileFilled;
+

@@ -30,7 +30,7 @@ export default function Error({
         Technical Failure.
       </h1>
       <p className="text-xl text-text-muted font-medium mb-12 text-center max-w-md leading-relaxed">
-        Our systems encountered an unexpected error. This has been logged and we're on it.
+        Our systems encountered an unexpected error. This has been logged and we&apos;re on it.
       </p>
 
       <button
@@ -45,7 +45,7 @@ export default function Error({
         <div className="flex gap-2">
           <div className="w-2 h-2 bg-danger rounded-full animate-ping" />
           <p className="text-[10px] font-bold uppercase tracking-[0.4em] font-mono text-danger">
-            // EMERGENCY DESCENT // SYSTEM_OVERLOAD
+            {"// EMERGENCY DESCENT // SYSTEM_OVERLOAD"}
           </p>
         </div>
         <div className="bg-surface p-3 rounded-lg border border-border">

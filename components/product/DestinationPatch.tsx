@@ -33,7 +33,7 @@ const Icons = {
   )
 };
 
-const DestinationPatch = ({ destination }: { destination: Destination }) => {
+export const DestinationPatch = ({ destination }: { destination: Destination }) => {
   const { city, country, count, colorTheme, shape } = destination;
   
   // Pick icon based on city/IATA
@@ -44,8 +44,8 @@ const DestinationPatch = ({ destination }: { destination: Destination }) => {
 
   const shapeClasses = {
     oval: 'rounded-full px-8 py-10 aspect-[3/4]',
-    hexagon: 'rounded-[2.5rem] p-10 aspect-square rotate-12 group-hover:rotate-0 transition-transform',
-    rectangle: 'rounded-3xl p-10 aspect-square'
+    hexagon: 'rounded-[2.5rem] p-10 aspect-square rotate-12 group-hover:rotate-0 transition-transform duration-500',
+    rectangle: 'rounded-[2rem] p-10 aspect-square'
   };
 
   return (
@@ -55,25 +55,27 @@ const DestinationPatch = ({ destination }: { destination: Destination }) => {
     >
       <div className={`
         ${shapeClasses[shape]} 
-        border-[3px] ${colorTheme} bg-transparent 
+        border border-border bg-white
         flex flex-col items-center justify-center gap-4
-        shadow-sm hover:shadow-md transition-shadow
+        shadow-sm hover:shadow-2xl hover:shadow-black/5 transition-all duration-500
       `}>
-        <div className={shape === 'hexagon' ? '-rotate-12 group-hover:rotate-0 transition-transform' : ''}>
+        <div className={`
+          w-16 h-16 rounded-2xl flex items-center justify-center mb-1
+          ${shape === 'hexagon' ? '-rotate-12 group-hover:rotate-0 transition-transform duration-500' : ''}
+          ${colorTheme.replace('border-', 'bg-').replace('-600', '-50')} ${colorTheme.replace('border-', 'text-')}
+        `}>
           {icon}
         </div>
         <div className="text-center">
-          <p className="text-sm font-bold truncate max-w-[120px]">{city}</p>
-          <p className="text-[10px] font-medium opacity-60 uppercase tracking-widest">{country}</p>
+          <p className="text-[15px] font-black text-text truncate max-w-[140px] tracking-tight">{city}</p>
+          <p className="text-[10px] font-black text-text-muted/60 uppercase tracking-[0.2em] font-mono">{country}</p>
         </div>
       </div>
-      <div className="mt-4 text-center">
-        <span className="bg-surface-2 text-text-muted text-[10px] font-bold px-2 py-1 rounded-full">
+      <div className="mt-5 text-center">
+        <span className="bg-white text-text-muted text-[10px] font-black px-4 py-1.5 rounded-full border border-border shadow-sm uppercase tracking-widest font-mono">
           {count} {count === 1 ? 'Trip' : 'Trips'}
         </span>
       </div>
     </motion.div>
   );
 };
-
-export default DestinationPatch;

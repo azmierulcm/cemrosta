@@ -1,5 +1,5 @@
 import * as ics from 'ics';
-import { RosterData, DutyEvent } from '@/lib/types';
+import { RosterData } from '@/lib/types';
 
 export function generateICS(roster: RosterData): string | null {
   const events: ics.EventAttributes[] = roster.events.map((event) => {

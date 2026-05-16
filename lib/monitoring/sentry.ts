@@ -3,7 +3,7 @@
  * PII scrubbing is enabled by default.
  */
 
-export function captureException(error: any, context?: Record<string, any>) {
+export function captureException(error: unknown, context?: Record<string, unknown>) {
   // Console logging for development
   if (process.env.NODE_ENV === 'development') {
     console.error(`[Sentry] Exception Captured:`, error, context);

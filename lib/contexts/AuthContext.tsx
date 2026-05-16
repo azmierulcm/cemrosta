@@ -37,6 +37,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authView, setAuthView] = useState<'login' | 'signup'>('signup');
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      if (data) setProfile(data as Profile);
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    }
+  };
+
   useEffect(() => {
     // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -60,21 +75,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error;
-      if (data) setProfile(data as Profile);
-    } catch (err) {
-      console.error('Error fetching profile:', err);
-    }
-  };
 
   const openAuthModal = (view: 'login' | 'signup' = 'signup') => {
     setAuthView(view);

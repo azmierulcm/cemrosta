@@ -1,35 +1,25 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Upload, Loader2, Camera, Trash2, CheckCircle2, User, Plus } from 'lucide-react';
+import { X, Loader2, Camera, Trash2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/lib/utils/supabase';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
-const EditProfileModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+export const EditProfileModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
   const { user, profile, setProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [fullName, setFullName] = useState(profile?.full_name || '');
-  const [rank, setRank] = useState(profile?.rank || 'First Officer');
-  const [airline, setAirline] = useState(profile?.airline || 'Malaysia Airlines');
-  const [bio, setBio] = useState(profile?.bio || '');
+  const [fullName, setFullName] = useState(() => profile?.full_name || '');
+  const [rank, setRank] = useState(() => profile?.rank || 'First Officer');
+  const [airline, setAirline] = useState(() => profile?.airline || 'Malaysia Airlines');
+  const [bio, setBio] = useState(() => profile?.bio || '');
   
   const [newFiles, setNewFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>(profile?.gallery_urls || []);
+  const [previews, setPreviews] = useState<string[]>(() => profile?.gallery_urls || []);
   
   const [isUpdating, setIsUpdating] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-
-  useEffect(() => {
-    if (profile) {
-      setFullName(profile.full_name || '');
-      setRank(profile.rank || 'First Officer');
-      setAirline(profile.airline || 'Malaysia Airlines');
-      setBio(profile.bio || '');
-      setPreviews(profile.gallery_urls || []);
-    }
-  }, [profile]);
 
   if (!isOpen) return null;
 
@@ -53,19 +43,16 @@ const EditProfileModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      console.error("DEBUG: No user found in AuthStore");
       setStatus({ type: 'error', text: 'Auth Error: No user session found.' });
       return;
     }
 
-    console.log("DEBUG: Starting Profile Update for user:", user.id);
     setIsUpdating(true);
     setStatus(null);
 
     try {
       // 1. Filter existing URLs
-      let finalGalleryUrls = previews.filter(url => url.startsWith('http'));
-      console.log("DEBUG: Retained existing photos:", finalGalleryUrls.length);
+      const finalGalleryUrls = previews.filter(url => url.startsWith('http'));
 
       // 2. Upload NEW Images
       for (const file of newFiles) {
@@ -73,15 +60,11 @@ const EditProfileModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         const filePath = `${user.id}/gallery/${fileName}`;
 
-        console.log("DEBUG: Uploading new file:", filePath);
         const { error: uploadError } = await supabase.storage
           .from('profile-photos')
           .upload(filePath, file);
 
-        if (uploadError) {
-          console.error("DEBUG: Upload Error:", uploadError);
-          throw uploadError;
-        }
+        if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabase.storage
           .from('profile-photos')
@@ -100,20 +83,13 @@ const EditProfileModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
         updated_at: new Date().toISOString()
       };
 
-      console.log("DEBUG: Upserting into 'profiles' table:", updateData);
-
       // 3. Update Profile in DB
-      const { data, error: dbError } = await supabase
+      const { error: dbError } = await supabase
         .from('profiles')
         .upsert(updateData)
         .select();
 
-      if (dbError) {
-        console.error("DEBUG: Database Error:", dbError);
-        throw dbError;
-      }
-
-      console.log("DEBUG: Database success:", data);
+      if (dbError) throw dbError;
 
       // 4. Update Global State
       setProfile({
@@ -133,11 +109,10 @@ const EditProfileModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
         setNewFiles([]);
       }, 1500);
 
-    } catch (err: any) {
-      console.error("DEBUG: Final Catch Error:", err);
+    } catch (err) {
       setStatus({ 
         type: 'error', 
-        text: err.message || 'Failed to update profile. Check Supabase RLS policies.' 
+        text: err instanceof Error ? err.message : 'Failed to update profile. Check Supabase RLS policies.' 
       });
     } finally {
       setIsUpdating(false);
@@ -152,90 +127,90 @@ const EditProfileModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          className="absolute inset-0 bg-white/80 backdrop-blur-md"
         />
         
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="bg-bg w-full max-w-2xl rounded-[2.5rem] p-10 relative z-10 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar"
+          className="bg-white border border-border w-full max-w-2xl rounded-[3rem] p-10 md:p-14 relative z-10 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar"
         >
-          <button onClick={onClose} className="absolute top-8 right-8 p-2 hover:bg-surface-2 rounded-full transition-colors">
-            <X size={20} className="text-text-subtle" />
+          <button onClick={onClose} className="absolute top-10 right-10 p-3 hover:bg-surface-2 rounded-full transition-colors text-text-muted">
+            <X size={24} />
           </button>
 
-          <h2 className="text-3xl font-black text-text mb-2">Edit Profile</h2>
-          <p className="text-text-muted font-medium mb-10 text-lg italic">Build your pilot persona.</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-text mb-3 tracking-tighter">Edit Passport.</h2>
+          <p className="text-text-muted font-bold mb-12 text-lg tracking-tight">Build your pilot persona.</p>
 
           {status && (
-            <div className={`mb-8 p-5 rounded-2xl flex items-center gap-3 text-sm font-bold border ${
-              status.type === 'success' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'
+            <div className={`mb-10 p-6 rounded-2xl flex items-center gap-4 text-sm font-bold border shadow-sm ${
+              status.type === 'success' ? 'bg-success/5 text-success border-success/10' : 'bg-danger/5 text-danger border-danger/10'
             }`}>
-              {status.type === 'success' ? <CheckCircle2 size={20} /> : <Trash2 size={20} />}
+              {status.type === 'success' ? <CheckCircle2 size={24} /> : <Trash2 size={24} />}
               <p>{status.text}</p>
             </div>
           )}
 
-          <form className="space-y-8" onSubmit={handleUpdate}>
+          <form className="space-y-12" onSubmit={handleUpdate}>
             <div className="space-y-6">
               <div className="space-y-4">
-                <label className="text-[10px] font-black uppercase tracking-widest text-text-subtle">Identity</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-subtle font-mono px-1">Identity Information</label>
                 <input 
                   type="text" 
                   required
                   placeholder="Full Name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-surface border border-border p-5 rounded-2xl font-bold focus:outline-none focus:ring-2 focus:ring-accent/20 focus:bg-bg transition-all text-text"
+                  className="w-full bg-surface-2 border border-border p-6 rounded-2xl font-bold focus:outline-none focus:ring-4 focus:ring-accent/10 focus:border-accent transition-all text-text shadow-sm placeholder:text-text-subtle/50"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-8">
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-subtle">Rank</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-text-subtle font-mono px-1">Current Rank</label>
                   <input 
                     type="text" 
                     value={rank}
                     onChange={(e) => setRank(e.target.value)}
-                    className="w-full bg-surface border border-border p-5 rounded-2xl font-bold focus:outline-none text-text"
+                    className="w-full bg-surface-2 border border-border p-6 rounded-2xl font-bold focus:outline-none focus:ring-4 focus:ring-accent/10 focus:border-accent transition-all text-text shadow-sm"
                   />
                 </div>
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-subtle">Airline</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-text-subtle font-mono px-1">Primary Airline</label>
                   <input 
                     type="text" 
                     value={airline}
                     onChange={(e) => setAirline(e.target.value)}
-                    className="w-full bg-surface border border-border p-5 rounded-2xl font-bold focus:outline-none text-text"
+                    className="w-full bg-surface-2 border border-border p-6 rounded-2xl font-bold focus:outline-none focus:ring-4 focus:ring-accent/10 focus:border-accent transition-all text-text shadow-sm"
                   />
                 </div>
               </div>
 
               <div className="space-y-4">
-                <label className="text-[10px] font-black uppercase tracking-widest text-text-subtle">Short Bio</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-subtle font-mono px-1">Biography</label>
                 <textarea 
-                  rows={3}
+                  rows={4}
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  placeholder="Tell your story..."
-                  className="w-full bg-surface border border-border p-5 rounded-2xl font-bold focus:outline-none text-text"
+                  placeholder="Tell your story to other crew members..."
+                  className="w-full bg-surface-2 border border-border p-6 rounded-2xl font-bold focus:outline-none focus:ring-4 focus:ring-accent/10 focus:border-accent transition-all text-text shadow-sm placeholder:text-text-subtle/50"
                 />
               </div>
             </div>
 
-            <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-widest text-text-subtle">Gallery (Max 5 Photos)</label>
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
+            <div className="space-y-6">
+              <label className="text-[10px] font-black uppercase tracking-widest text-text-subtle font-mono px-1">Gallery (Max 5 Photos)</label>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-6">
                 {previews.map((src, i) => (
-                  <div key={i} className="aspect-square rounded-2xl overflow-hidden relative group border border-border">
+                  <div key={i} className="aspect-square rounded-2xl overflow-hidden relative group border border-border shadow-sm">
                     <img src={src} alt="Preview" className="w-full h-full object-cover" />
                     <button 
                       type="button"
                       onClick={() => removeImage(i)}
-                      className="absolute inset-0 bg-accent/80 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+                      className="absolute inset-0 bg-danger/80 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
                     >
-                      <Trash2 size={20} />
+                      <Trash2 size={24} />
                     </button>
                   </div>
                 ))}
@@ -244,10 +219,10 @@ const EditProfileModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="aspect-square rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:border-accent/50 hover:bg-surface transition-all text-text-subtle hover:text-accent"
+                    className="aspect-square rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-3 hover:border-accent/40 hover:bg-surface-2 transition-all text-text-subtle hover:text-accent shadow-sm"
                   >
-                    <Plus size={24} />
-                    <span className="text-[10px] font-black uppercase">Upload</span>
+                    <Camera size={28} strokeWidth={1.5} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Add</span>
                   </button>
                 )}
               </div>
@@ -257,14 +232,14 @@ const EditProfileModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
             <button 
               type="submit"
               disabled={isUpdating}
-              className="w-full bg-black text-white py-6 rounded-2xl font-black text-lg hover:bg-gray-800 transition-all active:scale-[0.98] shadow-xl disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-3"
+              className="w-full bg-accent text-accent-fg py-6 rounded-full font-black text-xl hover:bg-accent-hover transition-all active:scale-[0.98] shadow-2xl shadow-accent/20 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-4 mt-8"
             >
               {isUpdating ? (
                 <>
-                  <Loader2 className="animate-spin" />
-                  Updating...
+                  <Loader2 className="animate-spin w-6 h-6" />
+                  Updating Flight Deck...
                 </>
-              ) : 'Save Profile Changes'}
+              ) : 'Save Passport Changes'}
             </button>
           </form>
         </motion.div>
@@ -272,5 +247,3 @@ const EditProfileModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
     </AnimatePresence>
   );
 };
-
-export default EditProfileModal;

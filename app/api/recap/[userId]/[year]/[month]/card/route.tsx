@@ -9,7 +9,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ userId: string; year: string; month: string }> }
 ) {
-  const { userId, year, month } = await params;
+  const { year, month } = await params;
   const { searchParams } = new URL(req.url);
   const download = searchParams.get('download') === '1';
 

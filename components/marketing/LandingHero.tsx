@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { CheckCircle2, ShieldCheck, Zap, Heart } from 'lucide-react';
 import HeroAnimation from './HeroAnimation';
-import FileUploader from '../product/FileUploader';
-import WaitlistSheet from './WaitlistSheet';
+import { FileUploader } from '../product/FileUploader';
+import { WaitlistSheet } from './WaitlistSheet';
 
 const FORMAT_PILLS = [
   { name: 'MAS AIMS', status: 'live' },
@@ -14,15 +14,15 @@ const FORMAT_PILLS = [
   { name: 'SIA', status: 'soon' },
 ];
 
-const LandingHero = () => {
+export const LandingHero = () => {
   const shouldReduceMotion = useReducedMotion();
   const [waitlistAirline, setWaitlistAirline] = useState<string | null>(null);
   const rostersProcessed = 1242; // Seeded constant + real count logic would go here
 
   return (
-    <section className="pt-32 pb-24 px-4 min-h-[100svh] flex flex-col items-center bg-bg relative overflow-hidden">
+    <section className="pt-40 pb-24 px-4 min-h-[100svh] flex flex-col items-center bg-white relative overflow-hidden">
       {/* Background radial glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-accent/5 blur-[120px] rounded-full -z-10" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-accent/3 blur-[120px] rounded-full -z-10" />
 
       <div className="max-w-5xl mx-auto text-center flex-1 flex flex-col items-center">
         <motion.div
@@ -32,11 +32,11 @@ const LandingHero = () => {
         >
           <HeroAnimation />
           
-          <h1 className="text-4xl md:text-7xl font-bold tracking-tighter text-text mb-6 mt-8 max-w-4xl mx-auto leading-[1.1]">
-            Your roster, <span className="text-accent italic font-serif font-light">transformed.</span>
+          <h1 className="text-5xl md:text-8xl font-black tracking-tighter text-text mb-8 mt-12 max-w-5xl mx-auto leading-[0.95]">
+            Your roster, <span className="text-accent">reimagined.</span>
           </h1>
           
-          <p className="text-lg md:text-xl text-text-muted mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
+          <p className="text-xl md:text-2xl text-text-muted mb-16 max-w-2xl mx-auto font-bold leading-tight tracking-tight">
             Drop your Malaysia Airlines roster PDF. Get a synced calendar and a digital passport of every city you&apos;ve flown to.
           </p>
         </motion.div>
@@ -45,25 +45,25 @@ const LandingHero = () => {
           initial={{ opacity: 0, scale: shouldReduceMotion ? 1 : 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2, duration: 0.6 }}
-          className="w-full max-w-2xl mb-12"
+          className="w-full max-w-2xl mb-16"
         >
           <FileUploader />
           
           {/* Format Pills */}
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <div className="mt-10 flex flex-wrap justify-center gap-4">
              {FORMAT_PILLS.map((pill) => (
                <button
                  key={pill.name}
                  onClick={() => pill.status === 'soon' && setWaitlistAirline(pill.name)}
                  className={`
-                   px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 border
+                   px-8 py-3 rounded-full text-xs font-black transition-all flex items-center gap-3 border uppercase tracking-widest
                    ${pill.status === 'live' 
-                     ? 'bg-accent/10 border-accent/20 text-accent' 
-                     : 'bg-surface border-border text-text-subtle hover:border-accent/30 hover:text-text'}
+                     ? 'bg-accent/5 border-accent/10 text-accent shadow-sm' 
+                     : 'bg-surface-2 border-border text-text-muted hover:border-text-subtle hover:text-text shadow-sm'}
                  `}
                >
                  {pill.name}
-                 {pill.status === 'live' ? <CheckCircle2 size={12} strokeWidth={3} /> : <span className="opacity-50">· soon</span>}
+                 {pill.status === 'live' ? <CheckCircle2 size={14} strokeWidth={3} /> : <span className="opacity-40">· soon</span>}
                </button>
              ))}
           </div>
@@ -75,23 +75,23 @@ const LandingHero = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8 }}
-        className="w-full max-w-7xl mx-auto mt-auto pt-12 border-t border-border flex flex-wrap justify-center md:justify-between items-center gap-8 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-text-subtle font-mono"
+        className="w-full max-w-7xl mx-auto mt-auto pt-16 border-t border-border flex flex-wrap justify-center md:justify-between items-center gap-10 text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] text-text-subtle font-mono"
       >
         <div className="flex items-center gap-3">
-          <Zap size={14} className="text-accent" />
-          <span>Built for Malaysia Airlines Crew</span>
+          <Zap size={16} className="text-accent" />
+          <span>MAS AIMS Support</span>
         </div>
         <div className="flex items-center gap-3">
-          <CheckCircle2 size={14} className="text-success" />
-          <span>{rostersProcessed.toLocaleString()} Rosters Processed</span>
+          <CheckCircle2 size={16} className="text-success" />
+          <span>{rostersProcessed.toLocaleString()} Crew Syncing</span>
         </div>
         <div className="flex items-center gap-3">
-          <ShieldCheck size={14} className="text-accent" />
-          <span>Data never leaves your browser</span>
+          <ShieldCheck size={16} className="text-accent" />
+          <span>Session Privacy</span>
         </div>
         <div className="flex items-center gap-3">
-          <Heart size={14} className="text-danger" />
-          <span>Free Forever for individual crew</span>
+          <Heart size={16} className="text-accent" />
+          <span>Built for Crew</span>
         </div>
       </motion.div>
 
@@ -103,5 +103,3 @@ const LandingHero = () => {
     </section>
   );
 };
-
-export default LandingHero;

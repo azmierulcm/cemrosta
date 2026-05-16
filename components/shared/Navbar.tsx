@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User, Menu, X, Upload, LayoutDashboard, Calendar, MapPinned, ShoppingBag, Settings as SettingsIcon } from 'lucide-react';
+import { Menu, X, Upload, LayoutDashboard, Calendar, MapPinned, ShoppingBag, Settings as SettingsIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { supabase } from '@/lib/utils/supabase';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 
-const Navbar = () => {
+export const Navbar = () => {
   const { user, setUser, openAuthModal } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
@@ -25,7 +25,7 @@ const Navbar = () => {
   };
 
   const navLinks = [
-    { label: 'Dashboard', href: '/', icon: LayoutDashboard, authRequired: true },
+    { label: 'Timeline', href: '/', icon: LayoutDashboard, authRequired: true },
     { label: 'Calendar', href: '/calendar', icon: Calendar, authRequired: true },
     { label: 'Passport', href: '/profile', icon: MapPinned, authRequired: true },
     { label: 'Marketplace', href: '/marketplace', icon: ShoppingBag, authRequired: true },
@@ -33,42 +33,42 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed top-0 w-full bg-bg/80 backdrop-blur-md border-b border-border z-50">
+    <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-md border-b border-border z-[100] shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex justify-between items-center h-24">
           <Link 
             href="/" 
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             onClick={scrollToTop}
           >
-            {/* Abstract Runway Logo */}
+            {/* Abstract Logo in Accent Color */}
             <div className="flex flex-col gap-1">
-              <div className="w-6 h-1.5 bg-accent/30" />
-              <div className="w-6 h-3 bg-accent/60" />
+              <div className="w-6 h-1.5 bg-accent/20" />
+              <div className="w-6 h-3 bg-accent/50" />
               <div className="w-6 h-6 bg-accent" />
             </div>
-            <span className="text-2xl font-bold tracking-tight text-text">Cemrosta</span>
+            <span className="text-3xl font-black tracking-tighter text-text">Cemrosta</span>
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-4 font-medium text-sm text-text-muted">
+          <div className="hidden md:flex items-center gap-2 font-bold text-sm">
             {user ? (
               <>
-                <div className="flex items-center gap-2 mr-4">
+                <div className="flex items-center gap-1 mr-6">
                   {navLinks.map((link) => (
                     <Link 
                       key={link.href}
                       href={link.href}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${pathname === link.href ? 'text-accent bg-accent/10' : 'hover:text-text hover:bg-surface'}`}
+                      className={`flex items-center gap-2 px-6 py-3 rounded-full transition-all ${pathname === link.href ? 'text-accent bg-accent/5' : 'text-text-muted hover:text-text hover:bg-surface-2'}`}
                     >
-                      <link.icon size={18} />
+                      <link.icon size={20} />
                       {link.label}
                     </Link>
                   ))}
                 </div>
                 <button 
                   onClick={handleSignOut}
-                  className="bg-surface text-text border border-border px-6 py-2.5 rounded-xl hover:bg-surface-2 transition-all active:scale-95 font-bold"
+                  className="text-text-muted hover:text-danger px-6 py-3 rounded-full transition-all active:scale-95 font-black uppercase text-[10px] tracking-widest"
                 >
                   Sign Out
                 </button>
@@ -77,15 +77,15 @@ const Navbar = () => {
               <>
                 <button 
                   onClick={() => openAuthModal('login')}
-                  className="text-text-muted hover:text-text px-4 py-2.5 transition-colors font-bold"
+                  className="text-text hover:bg-surface-2 px-8 py-3 rounded-full transition-all font-black uppercase text-[10px] tracking-widest"
                 >
-                  Sign In
+                  Log in
                 </button>
                 <button 
                   onClick={scrollToTop}
-                  className="bg-accent text-accent-fg px-6 py-2.5 rounded-xl hover:bg-accent-hover transition-all active:scale-95 shadow-lg shadow-accent/20 font-bold flex items-center gap-2"
+                  className="bg-accent text-accent-fg px-10 py-4 rounded-full hover:bg-accent-hover transition-all active:scale-95 shadow-xl shadow-accent/10 font-bold flex items-center gap-3"
                 >
-                  <Upload size={16} strokeWidth={3} />
+                  <Upload size={18} strokeWidth={3} />
                   Upload Roster
                 </button>
               </>
@@ -96,9 +96,9 @@ const Navbar = () => {
           <div className="md:hidden">
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-3 -mr-3 text-text-muted hover:text-text transition-colors"
+              className="p-4 -mr-4 text-text-muted hover:text-text transition-colors"
             >
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
           </div>
         </div>
@@ -108,22 +108,22 @@ const Navbar = () => {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute top-20 left-0 w-full bg-bg border-b border-border md:hidden p-4 space-y-4"
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-24 left-0 w-full bg-white border-b border-border md:hidden p-6 space-y-6 shadow-2xl"
           >
             {user ? (
               <>
-                <div className="grid grid-cols-1 gap-2">
+                <div className="grid grid-cols-1 gap-3">
                   {navLinks.map((link) => (
                     <Link 
                       key={link.href}
                       href={link.href}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-4 rounded-2xl font-bold ${pathname === link.href ? 'text-accent bg-accent/10' : 'text-text bg-surface'}`}
+                      className={`flex items-center gap-4 px-6 py-5 rounded-[2rem] font-bold text-lg ${pathname === link.href ? 'text-accent bg-accent/10' : 'text-text bg-surface-2'}`}
                     >
-                      <link.icon size={20} />
+                      <link.icon size={24} />
                       {link.label}
                     </Link>
                   ))}
@@ -133,7 +133,7 @@ const Navbar = () => {
                     handleSignOut();
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full px-4 py-4 text-text-muted font-bold text-left"
+                  className="w-full px-6 py-5 text-text-muted font-black uppercase text-xs tracking-widest text-left"
                 >
                   Sign Out
                 </button>
@@ -145,9 +145,9 @@ const Navbar = () => {
                     scrollToTop();
                     setIsMobileMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 w-full px-4 py-4 text-accent-fg font-bold bg-accent rounded-2xl"
+                  className="flex items-center gap-4 w-full px-8 py-6 text-accent-fg font-bold text-xl bg-accent rounded-[2rem] shadow-xl shadow-accent/20"
                 >
-                  <Upload size={20} strokeWidth={3} />
+                  <Upload size={24} strokeWidth={3} />
                   Upload Roster
                 </button>
                 <button 
@@ -155,7 +155,7 @@ const Navbar = () => {
                     openAuthModal('login');
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full px-4 py-4 text-text font-bold text-left"
+                  className="w-full px-8 py-6 text-text font-black uppercase text-xs tracking-widest text-left border border-border rounded-[2rem] hover:bg-surface-2 transition-all"
                 >
                   Sign In
                 </button>
@@ -168,4 +168,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+

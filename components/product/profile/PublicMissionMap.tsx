@@ -16,7 +16,7 @@ interface Route {
   to: [number, number];
 }
 
-const PublicMissionMap = () => {
+export const PublicMissionMap = () => {
   const routes: Route[] = [
     { from: [101.7099, 2.7456], to: [-0.4543, 51.4700] }, // KUL to LHR
     { from: [101.7099, 2.7456], to: [113.2988, 23.3924] }, // KUL to CAN
@@ -31,11 +31,11 @@ const PublicMissionMap = () => {
   ];
 
   return (
-    <div className="w-full h-[400px] bg-slate-50 rounded-[2.5rem] overflow-hidden border border-border relative group">
+    <div className="w-full h-[500px] bg-surface-2 rounded-[2.5rem] overflow-hidden border border-border relative group shadow-inner">
       <ComposableMap
         projectionConfig={{
           rotate: [-120, 0, 0],
-          scale: 120
+          scale: 140
         }}
         style={{ width: "100%", height: "100%" }}
       >
@@ -45,12 +45,12 @@ const PublicMissionMap = () => {
               <Geography
                 key={geo.rsmKey}
                 geography={geo}
-                fill="#E2E8F0"
-                stroke="#FFFFFF"
+                fill="#FFFFFF"
+                stroke="#E2E8F0"
                 strokeWidth={0.5}
                 style={{
                   default: { outline: "none" },
-                  hover: { outline: "none", fill: "#CBD5E1" },
+                  hover: { outline: "none", fill: "#F7F9FC" },
                   pressed: { outline: "none" },
                 }}
               />
@@ -63,20 +63,21 @@ const PublicMissionMap = () => {
             key={i}
             from={route.from}
             to={route.to}
-            stroke="#FF5A5F"
-            strokeWidth={1.5}
+            stroke="var(--accent)"
+            strokeWidth={2}
             strokeLinecap="round"
             strokeDasharray="4 4"
+            opacity={0.6}
           />
         ))}
 
         {markers.map(({ name, coordinates }) => (
           <Marker key={name} coordinates={coordinates as [number, number]}>
-            <circle r={3} fill="#FF5A5F" stroke="#FFF" strokeWidth={1} />
+            <circle r={4} fill="var(--accent)" stroke="#FFF" strokeWidth={2} />
             <text
               textAnchor="middle"
-              y={-10}
-              style={{ fontFamily: "Inter", fontSize: "8px", fontWeight: "bold", fill: "#1F2937" }}
+              y={-12}
+              style={{ fontFamily: "var(--font-geist-mono)", fontSize: "10px", fontWeight: "900", fill: "var(--text)" }}
             >
               {name}
             </text>
@@ -84,13 +85,11 @@ const PublicMissionMap = () => {
         ))}
       </ComposableMap>
 
-      <div className="absolute top-6 left-6 bg-bg/80 backdrop-blur-md px-4 py-2 rounded-full border border-white shadow-sm z-10">
-        <p className="text-[10px] font-black text-text tracking-widest uppercase">
-          Current Month Operations
+      <div className="absolute top-8 left-8 bg-white/95 backdrop-blur-md px-6 py-3 rounded-full border border-border shadow-xl z-10">
+        <p className="text-[10px] font-black text-text tracking-[0.3em] uppercase font-mono">
+          {"// MISSION FLIGHT PATHS"}
         </p>
       </div>
     </div>
   );
 };
-
-export default PublicMissionMap;

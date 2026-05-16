@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/utils/supabase';
-import { Flight, CrewStats, Achievement, CrewProfile } from '@/lib/types/passport';
+import { Flight, CrewStats, CrewProfile } from '@/lib/types/passport';
 import { ACHIEVEMENT_CATALOG } from './definitions';
 
 /**
@@ -21,7 +21,7 @@ export async function evaluateAchievements(crewId: string, currentStats: CrewSta
     .eq('crew_id', crewId);
 
   const existingKeys = new Set(existing?.map(a => a.key) || []);
-  const newAchievements: any[] = [];
+  const newAchievements: { crew_id: string; key: string; flight_id: string | null; metadata: Record<string, string | number | boolean | null> }[] = [];
 
   // 3. Check every definition
   ACHIEVEMENT_CATALOG.forEach(def => {

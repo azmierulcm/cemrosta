@@ -17,7 +17,7 @@ export default function NotFound() {
         Off Course.
       </h1>
       <p className="text-xl text-text-muted font-medium mb-12 text-center max-w-md leading-relaxed">
-        The sector you're looking for doesn't exist in our database. Let's get you back to base.
+        The sector you&apos;re looking for doesn&apos;t exist in our database. Let&apos;s get you back to base.
       </p>
 
       <Link 
@@ -36,7 +36,7 @@ export default function NotFound() {
           <div className="w-8 h-1 bg-border rounded-full" />
         </div>
         <p className="text-[10px] font-bold uppercase tracking-[0.4em] font-mono text-text-subtle">
-          // SIGNAL LOST // GPS MALFUNCTION
+          {"// SIGNAL LOST // GPS MALFUNCTION"}
         </p>
       </div>
     </main>

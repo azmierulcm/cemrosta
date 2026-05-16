@@ -1,15 +1,14 @@
 'use client';
 
 import React from 'react';
-import Navbar from '@/components/shared/Navbar';
-import PublicProfileGallery from '@/components/product/profile/PublicProfileGallery';
-import PublicMissionMap from '@/components/product/profile/PublicMissionMap';
-import StatsGrid from '@/components/product/profile/StatsGrid';
+import { Navbar } from '@/components/shared/Navbar';
+import { PublicProfileGallery } from '@/components/product/profile/PublicProfileGallery';
+import { PublicMissionMap } from '@/components/product/profile/PublicMissionMap';
 import DestinationPatch from '@/components/product/DestinationPatch';
 import { useRoster } from '@/lib/contexts/RosterContext';
 
 export default function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = React.use(params);
+  React.use(params);
   // In a real app, we would fetch the profile from Supabase by ID.
   // For now, we reuse our local roster data or sample data.
   const { roster, loadSampleRoster } = useRoster();
@@ -22,10 +21,10 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
   if (!roster) return null;
 
   return (
-    <main className="min-h-screen bg-bg pb-32">
+    <main className="min-h-screen bg-surface-2 pb-32">
       <Navbar />
       
-      <div className="max-w-7xl mx-auto px-4 pt-32">
+      <div className="max-w-7xl mx-auto px-4 pt-40 md:pt-48">
         {/* Immersive 5-Photo Grid */}
         <PublicProfileGallery />
 

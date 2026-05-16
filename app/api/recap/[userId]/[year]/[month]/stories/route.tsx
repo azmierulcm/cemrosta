@@ -2,7 +2,6 @@ import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
 import { StoriesTemplate } from '@/lib/recap/templates';
 import { getTopSuperlative } from '@/lib/recap/superlatives';
-import { formatBlockHours, formatKilometers } from '@/lib/utils/format';
 
 export const runtime = 'edge';
 
@@ -10,7 +9,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ userId: string; year: string; month: string }> }
 ) {
-  const { userId, year, month } = await params;
+  const { year, month } = await params;
   const { searchParams } = new URL(req.url);
   const download = searchParams.get('download') === '1';
 

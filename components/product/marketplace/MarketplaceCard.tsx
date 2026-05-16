@@ -17,53 +17,54 @@ interface Listing {
   airline?: string;
 }
 
-const MarketplaceCard = ({ listing }: { listing: Listing }) => {
+export const MarketplaceCard = ({ listing }: { listing: Listing }) => {
   const shouldReduceMotion = useReducedMotion();
 
   return (
     <motion.div
-      whileHover={shouldReduceMotion ? {} : { y: -8 }}
+      whileHover={shouldReduceMotion ? {} : { y: -10 }}
       className="group cursor-pointer"
     >
-      <div className="aspect-square rounded-[2rem] overflow-hidden mb-4 relative shadow-sm border border-border">
+      <div className="aspect-square rounded-[2.5rem] overflow-hidden mb-6 relative shadow-sm border border-border bg-white transition-all group-hover:shadow-2xl group-hover:shadow-black/10">
         <img 
           src={listing.image} 
           alt={listing.title} 
-          className={`w-full h-full object-cover transition-transform duration-500 ${shouldReduceMotion ? '' : 'group-hover:scale-110'}`}
+          className={`w-full h-full object-cover transition-transform duration-700 ${shouldReduceMotion ? '' : 'group-hover:scale-110'}`}
+          loading="lazy"
         />
-        <div className="absolute top-4 left-4 flex flex-col gap-2">
-           <div className="bg-bg/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-text shadow-sm border border-border">
+        <div className="absolute top-5 left-5 flex flex-col gap-2">
+           <div className="bg-white/95 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-text shadow-xl border border-border">
              {listing.condition}
            </div>
            {listing.isVerified && (
-             <div className="bg-success/90 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest text-white shadow-sm flex items-center gap-1">
-                <ShieldCheck size={10} strokeWidth={3} />
+             <div className="bg-success text-white px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl flex items-center gap-1.5 border border-white/20">
+                <ShieldCheck size={12} strokeWidth={3} />
                 Verified
              </div>
            )}
         </div>
       </div>
-      <div className="px-2">
-        <div className="flex justify-between items-start mb-1">
-          <h4 className="font-bold text-text truncate flex-1 pr-4">{listing.title}</h4>
-          <span className="font-black text-text text-lg">RM{listing.price}</span>
+      <div className="px-1">
+        <div className="flex justify-between items-start mb-2 gap-4">
+          <h4 className="text-lg font-bold text-text truncate tracking-tight">{listing.title}</h4>
+          <span className="font-black text-text text-xl tracking-tighter">RM{listing.price.toLocaleString()}</span>
         </div>
-        <p className="text-text-subtle text-xs font-bold uppercase tracking-tighter mb-4">{listing.category}</p>
-        <div className="flex items-center gap-2 border-t border-border pt-4">
-          <div className="w-6 h-6 rounded-full overflow-hidden bg-surface-2 border border-border">
+        <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.2em] mb-6 font-mono">{listing.category}</p>
+        <div className="flex items-center gap-3 border-t border-border/50 pt-5">
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-surface-2 border border-border shadow-sm">
             <img src={listing.avatar} alt={listing.seller} className="w-full h-full object-cover" />
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-text truncate max-w-[120px]">{listing.seller}</span>
+            <span className="text-[11px] font-bold text-text truncate max-w-[140px] tracking-tight">{listing.seller}</span>
             {listing.isVerified ? (
-              <span className="text-[8px] font-black text-success uppercase tracking-widest flex items-center gap-1">
-                <ShieldCheck size={8} strokeWidth={3} />
+              <span className="text-[9px] font-black text-success uppercase tracking-widest flex items-center gap-1">
+                <ShieldCheck size={10} strokeWidth={3} />
                 {listing.airline || 'Verified Crew'}
               </span>
             ) : (
-              <span className="text-[8px] font-bold text-text-subtle uppercase tracking-widest flex items-center gap-1">
-                <AlertCircle size={8} strokeWidth={3} />
-                Unverified Seller
+              <span className="text-[9px] font-black text-text-subtle uppercase tracking-widest flex items-center gap-1">
+                <AlertCircle size={10} strokeWidth={3} />
+                Unverified
               </span>
             )}
           </div>
@@ -72,5 +73,3 @@ const MarketplaceCard = ({ listing }: { listing: Listing }) => {
     </motion.div>
   );
 };
-
-export default MarketplaceCard;

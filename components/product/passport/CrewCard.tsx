@@ -6,7 +6,7 @@ interface CrewCardProps {
   stats: CrewStats;
 }
 
-const CrewCard = ({ profile, stats }: CrewCardProps) => {
+export const CrewCard = ({ profile, stats }: CrewCardProps) => {
   return (
     <div className="w-[360px] h-[540px] bg-passport-bg rounded-[2rem] border-[4px] border-passport-gold p-8 flex flex-col relative overflow-hidden shadow-2xl group">
       {/* Background Foil Pattern */}
@@ -84,4 +84,4 @@ const CrewCard = ({ profile, stats }: CrewCardProps) => {
   );
 };
 
-export default CrewCard;
+

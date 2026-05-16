@@ -36,7 +36,7 @@ export async function reportListing({ listingId, reporterId, reason, details }: 
     const newCount = (listing.reports_count || 0) + 1;
 
     // 3. Update listing status if report count >= 3
-    const updateData: any = { reports_count: newCount };
+    const updateData: { reports_count: number; status?: string } = { reports_count: newCount };
     if (newCount >= 3) {
       updateData.status = 'hidden';
     }

@@ -35,7 +35,7 @@ export type AnalyticsEvent = keyof typeof ANALYTICS_EVENTS;
  * Pluggable track function.
  * In production, this wires to Plausible or PostHog.
  */
-export function trackEvent(event: AnalyticsEvent, properties?: Record<string, any>) {
+export function trackEvent(event: AnalyticsEvent, properties?: Record<string, string | number | boolean | null>) {
   const eventName = ANALYTICS_EVENTS[event];
   
   // Console logging for development

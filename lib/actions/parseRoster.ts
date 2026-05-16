@@ -2,7 +2,7 @@
 
 import { getDocumentProxy, extractText } from 'unpdf';
 import { parseRosterText } from '@/lib/parser';
-import { RosterData, DutyEvent } from '@/lib/types';
+import { RosterData, DutyEvent, DutyType } from '@/lib/types';
 import { supabase } from '@/lib/utils/supabase';
 // Server-side tracking would normally go here
 // import { trackServerEvent } from '@/lib/analytics/server';
@@ -25,7 +25,7 @@ export async function parseRoster(formData: FormData): Promise<RosterData> {
     // Map ParsedRoster to RosterData (legacy support)
     const events: DutyEvent[] = parsed.duties.map(d => ({
       id: d.id,
-      type: d.type as any,
+      type: d.type as DutyType,
       date: d.date,
       flightNumber: d.flight?.flightNumber,
       depPort: d.flight?.depPort,
@@ -55,8 +55,8 @@ export async function parseRoster(formData: FormData): Promise<RosterData> {
       year: parsed.year,
       crewName: parsed.crewName,
     };
-  } catch (err: any) {
+  } catch (err) {
     console.error('PDF Parse Error:', err);
-    throw new Error(err.message || 'Could not read PDF roster.');
+    throw new Error(err instanceof Error ? err.message : 'Could not read PDF roster.');
   }
 }

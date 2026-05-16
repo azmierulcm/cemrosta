@@ -1,4 +1,4 @@
-import { ParsedRoster, ParsedDuty, ParsedFlight } from '../types';
+import { ParsedRoster, ParsedDuty } from '../types';
 
 /**
  * Template for adding a new airline parser to Cemrosta.
@@ -8,7 +8,7 @@ import { ParsedRoster, ParsedDuty, ParsedFlight } from '../types';
  * 3. Add tests in tests/parser/airline-name.test.ts
  */
 
-export function parseAirlineName(text: string): ParsedRoster {
+export function parseAirlineName(_text: string): ParsedRoster {
   const duties: ParsedDuty[] = [];
   
   // Implementation goes here

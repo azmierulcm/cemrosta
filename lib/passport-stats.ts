@@ -1,4 +1,4 @@
-import { Flight, CrewStats } from '@/lib/types/passport';
+import { CrewStats } from '@/lib/types/passport';
 import { supabase } from '@/lib/utils/supabase';
 import { evaluateAchievements } from './achievements/evaluator';
 

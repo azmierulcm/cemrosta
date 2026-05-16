@@ -8,11 +8,13 @@ export interface Superlative {
   score: number; // For ranking
 }
 
+import { DutyEvent } from '../types';
+
 /**
  * Computes all possible superlatives for a month and returns the top-ranked one.
  */
-export function getTopSuperlative(events: any[], homeBase: string = 'KUL'): Superlative {
-  const flightEvents = events.filter(e => e.type === 'FLIGHT' || e.type === 'DUTY');
+export function getTopSuperlative(events: DutyEvent[]): Superlative {
+  const flightEvents = events.filter(e => e.type === 'FLIGHT');
   
   const candidates: Superlative[] = [];
 

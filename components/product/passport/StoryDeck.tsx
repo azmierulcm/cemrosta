@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Download, Pause, Play, Volume2 } from 'lucide-react';
+import { X, Download, Pause, Play } from 'lucide-react';
 import Link from 'next/link';
 
 const SLIDES = [
@@ -19,7 +19,7 @@ const SLIDES = [
   { id: 11, type: 'text', title: "Ready for next year?", sub: "See you in 2027, First Officer Azmierul." },
 ];
 
-const StoryDeck = () => {
+export const StoryDeck = () => {
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -169,14 +169,14 @@ const StoryDeck = () => {
 };
 
 // Simplified icon helper for the component
-const Globe = (props: any) => (
+const Globe = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
     <circle cx="12" cy="12" r="10" />
     <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
   </svg>
 );
 
-const Award = (props: any) => (
+const Award = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
     <path d="M12 15l-2 5 2-1 2 1-2-5z" />
     <path d="M12 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14z" />
@@ -184,4 +184,4 @@ const Award = (props: any) => (
   </svg>
 );
 
-export default StoryDeck;
+

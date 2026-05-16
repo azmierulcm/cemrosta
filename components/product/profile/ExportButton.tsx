@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { toPng } from 'html-to-image';
-import { Download, Share2 } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 
-const ExportButton = ({ targetId, filename }: { targetId: string, filename: string }) => {
+export const ExportButton = ({ targetId, filename }: { targetId: string, filename: string }) => {
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
@@ -29,18 +29,16 @@ const ExportButton = ({ targetId, filename }: { targetId: string, filename: stri
     <button
       onClick={handleExport}
       disabled={isExporting}
-      className="bg-black text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 shadow-xl hover:scale-105 transition-all active:scale-95 disabled:opacity-50"
+      className="bg-accent text-accent-fg px-10 py-5 rounded-full font-black text-lg flex items-center justify-center gap-4 shadow-2xl shadow-accent/10 hover:bg-accent-hover transition-all active:scale-95 disabled:opacity-50"
     >
       {isExporting ? (
-        <span className="animate-pulse">Generating...</span>
+        <span className="animate-pulse">DECODING PIXELS...</span>
       ) : (
         <>
-          <Share2 className="w-5 h-5" />
+          <Share2 className="w-6 h-6" strokeWidth={3} />
           Export to Instagram Story
         </>
       )}
     </button>
   );
 };
-
-export default ExportButton;

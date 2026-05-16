@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -26,7 +26,7 @@ const IATA_COORDS: Record<string, [number, number]> = {
   'DXB': [25.2532, 55.3657],
 };
 
-const LeafletMap = ({ events }: { events: DutyEvent[] }) => {
+export const LeafletMap = ({ events }: { events: DutyEvent[] }) => {
   const routes = useMemo(() => {
     const paths: [number, number][][] = [];
     events.forEach((event) => {
@@ -61,7 +61,7 @@ const LeafletMap = ({ events }: { events: DutyEvent[] }) => {
       className="z-0"
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        attribution='&copy; CARTO'
         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
       />
       
@@ -69,9 +69,9 @@ const LeafletMap = ({ events }: { events: DutyEvent[] }) => {
         <Polyline 
           key={i} 
           positions={path} 
-          color="#FF5A5F" 
+          color="#FF385C" 
           weight={2} 
-          opacity={0.6} 
+          opacity={0.4} 
           dashArray="5, 10"
         />
       ))}
@@ -79,12 +79,10 @@ const LeafletMap = ({ events }: { events: DutyEvent[] }) => {
       {markers.map((m) => (
         <Marker key={m.iata} position={m.coords} icon={icon}>
           <Popup>
-            <div className="text-center font-bold uppercase tracking-tight">{m.iata}</div>
+            <div className="text-center font-black uppercase tracking-widest font-mono text-xs">{m.iata}</div>
           </Popup>
         </Marker>
       ))}
     </MapContainer>
   );
 };
-
-export default LeafletMap;

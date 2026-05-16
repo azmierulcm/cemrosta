@@ -7,10 +7,21 @@ interface FinalFlightProps {
   finalRoute: { origin: string; dest: string };
   retirementDate: string;
 }
+export const FinalFlightCard = ({ profile, stats, finalRoute, retirementDate }: FinalFlightProps) => {
+  // Fixed "random" positions for stars to maintain purity
+  const stars = [
+    { top: '12%', left: '84%' }, { top: '34%', left: '12%' }, { top: '56%', left: '45%' },
+    { top: '89%', left: '23%' }, { top: '21%', left: '67%' }, { top: '45%', left: '91%' },
+    { top: '76%', left: '10%' }, { top: '10%', left: '33%' }, { top: '65%', left: '78%' },
+    { top: '42%', left: '54%' }, { top: '92%', left: '88%' }, { top: '15%', left: '25%' },
+    { top: '58%', left: '15%' }, { top: '33%', left: '44%' }, { top: '71%', left: '62%' },
+    { top: '27%', left: '9%' }, { top: '82%', left: '38%' }, { top: '49%', left: '72%' },
+    { top: '6%', left: '59%' }, { top: '95%', left: '18%' }
+  ];
 
-const FinalFlightCard = ({ profile, stats, finalRoute, retirementDate }: FinalFlightProps) => {
   return (
     <div className="w-[360px] h-[640px] bg-black rounded-[2.5rem] p-10 flex flex-col relative overflow-hidden shadow-2xl border border-white/10">
+...
       {/* Luxurious Gold Accents */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-passport-gold to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-passport-gold to-transparent" />
@@ -26,7 +37,7 @@ const FinalFlightCard = ({ profile, stats, finalRoute, retirementDate }: FinalFl
         <div className="flex justify-center items-center gap-6 mb-4">
            <span className="text-3xl font-black text-white">{finalRoute.origin}</span>
            <div className="flex-1 h-px bg-passport-gold opacity-50 relative">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-passport-gold shadow-[0_0_10px_#D4AF37]" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-passport-gold shadow-[0_0_100px_#D4AF37]" />
            </div>
            <span className="text-3xl font-black text-white">{finalRoute.dest}</span>
         </div>
@@ -72,12 +83,10 @@ const FinalFlightCard = ({ profile, stats, finalRoute, retirementDate }: FinalFl
 
       {/* Background Starfield */}
       <div className="absolute inset-0 opacity-20">
-         {[...Array(20)].map((_, i) => (
-           <div key={i} className="absolute w-0.5 h-0.5 bg-bg rounded-full" style={{ top: `${Math.random() * 100}%`, left: `${Math.random() * 100}%` }} />
+         {stars.map((star, i) => (
+           <div key={i} className="absolute w-0.5 h-0.5 bg-bg rounded-full" style={{ top: star.top, left: star.left }} />
          ))}
       </div>
     </div>
   );
 };
-
-export default FinalFlightCard;

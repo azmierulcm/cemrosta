@@ -33,6 +33,37 @@ export interface RosterStats {
   uniqueDestinations: number;
 }
 
+export interface ProfileData {
+  name: string;
+  role: string;
+  homeBase: string;
+  aircraftType: string;
+  lifetimeStats: {
+    sectors: number;
+    blockMinutes: number;
+    kilometers: number;
+    citiesCollected: number;
+    totalAvailableCities: number;
+  };
+  monthlyRecap: {
+    month: string;
+    year: string;
+    sectors: number;
+    blockMinutes: number;
+    newCity: string | null;
+  };
+  destinations: {
+    iata: string;
+    name: string;
+    country: string;
+    region: string;
+    visits: number;
+    unlocked: boolean;
+    isNew?: boolean;
+    isHome?: boolean;
+  }[];
+}
+
 export interface RosterData {
   events: DutyEvent[];
   month: string;

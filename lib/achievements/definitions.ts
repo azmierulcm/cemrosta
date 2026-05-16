@@ -16,7 +16,7 @@ export interface AchievementDefinition {
   description: string;
   icon_key: string;
   rarity_pct?: number;
-  unlock: (stats: CrewStats, flight?: Flight, profile?: CrewProfile) => boolean | { earned: true; metadata: Record<string, any> };
+  unlock: (stats: CrewStats, flight?: Flight, profile?: CrewProfile) => boolean | { earned: true; metadata: Record<string, string | number | boolean | null> };
 }
 
 export const ACHIEVEMENT_CATALOG: AchievementDefinition[] = [
@@ -113,6 +113,6 @@ export const ACHIEVEMENT_CATALOG: AchievementDefinition[] = [
     description: 'Accumulated 5,000 block hours on a single aircraft type.',
     icon_key: 'star',
     rarity_pct: 0.5,
-    unlock: (stats) => false // Needs per-type stats
+    unlock: () => false // Needs per-type stats
   }
 ];

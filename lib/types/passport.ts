@@ -69,7 +69,7 @@ export interface Achievement {
   key: string;
   earned_at: string;
   flight_id: string | null;
-  metadata: Record<string, any>;
+  metadata: Record<string, string | number | boolean | null>;
 }
 
 export interface CrewStats {
