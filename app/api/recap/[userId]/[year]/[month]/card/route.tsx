@@ -19,15 +19,15 @@ export async function GET(
     year,
     heroValue: '82',
     heroLabel: 'BLOCK HOURS',
-    sectors: '18',
+    sectors: 18,
     hours: '82',
     km: '142k',
     handle: '@azmierul.fo'
   };
 
   const mockEvents = [
-    { type: 'FLIGHT', depPort: 'KUL', arrPort: 'LHR', flightNumber: 'MH 4' },
-    { type: 'FLIGHT', depPort: 'LHR', arrPort: 'KUL', flightNumber: 'MH 1' },
+    { id: '1', type: 'FLIGHT' as const, date: '2026-05-01', depPort: 'KUL', arrPort: 'LHR', flightNumber: 'MH 4' },
+    { id: '2', type: 'FLIGHT' as const, date: '2026-05-15', depPort: 'LHR', arrPort: 'KUL', flightNumber: 'MH 1' },
   ];
 
   const superlative = getTopSuperlative(mockEvents);

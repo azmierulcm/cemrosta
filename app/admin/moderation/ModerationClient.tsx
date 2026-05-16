@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from '@/components/shared/Navbar';
 import { supabase } from '@/lib/utils/supabase';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -38,42 +38,36 @@ export default function ModerationPage() {
   // Derive isAdmin from user during render to avoid useEffect cascade
   const isAdmin = user?.email ? ADMIN_EMAILS.includes(user.email) : false;
 
-  useEffect(() => {
-    let active = true;
-    const fetchReportedListings = async () => {
-      if (!isAdmin) return;
-      
-      // Delay state update to avoid synchronous cascading renders
-      await Promise.resolve();
-      if (!active) return;
-      setIsLoading(true);
+  const fetchReportedListings = useCallback(async () => {
+    if (!isAdmin) return;
+    
+    // Delay state update to avoid synchronous cascading renders
+    await Promise.resolve();
+    setIsLoading(true);
 
-      try {
-        const { data, error } = await supabase
-          .from('marketplace_listings')
-          .select(`
-            *,
-            profiles(full_name, airline),
-            marketplace_reports(reason, details, created_at, reporter_id)
-          `)
-          .gt('reports_count', 0)
-          .order('reports_count', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('marketplace_listings')
+        .select(`
+          *,
+          profiles(full_name, airline),
+          marketplace_reports(reason, details, created_at, reporter_id)
+        `)
+        .gt('reports_count', 0)
+        .order('reports_count', { ascending: false });
 
-        if (error) throw error;
-        if (!active) return;
-        setReportedListings((data as unknown as ReportedListing[]) || []);
-      } catch (err) {
-        console.error('Failed to fetch reports:', err);
-      } finally {
-        if (active) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchReportedListings();
-    return () => { active = false; };
+      if (error) throw error;
+      setReportedListings((data as unknown as ReportedListing[]) || []);
+    } catch (err) {
+      console.error('Failed to fetch reports:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, [isAdmin]);
+
+  useEffect(() => {
+    fetchReportedListings();
+  }, [fetchReportedListings]);
 
   const handleDismiss = async (listingId: string) => {
     try {

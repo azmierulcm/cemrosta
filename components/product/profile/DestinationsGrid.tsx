@@ -6,17 +6,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { REGION_TAXONOMY, RARITY_COLORS, getRarityTier } from '@/lib/patches/rules';
 import { ILLUSTRATIONS } from '@/lib/patches/illustrations';
 import { PatchDetailModal } from './PatchDetailModal';
-
-interface Destination {
-  iata: string;
-  name: string;
-  country: string;
-  region: string;
-  visits: number;
-  isHome?: boolean;
-  isNew?: boolean;
-  unlocked: boolean;
-}
+import { Destination } from '@/lib/types';
 
 interface DestinationsGridProps {
   destinations: Destination[];

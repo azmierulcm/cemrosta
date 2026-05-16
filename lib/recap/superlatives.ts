@@ -22,12 +22,12 @@ export function getTopSuperlative(events: DutyEvent[]): Superlative {
   // Note: Needs signOff - signOn or sta - std. 
   // For now we use a heuristic or just pick the one with max distance.
   const longestFlight = flightEvents.reduce((prev, current) => {
-    const prevDist = prev.depPort && prev.arrPort ? calculateKilometers(prev.depPort, prev.arrPort) : 0;
-    const currDist = current.depPort && current.arrPort ? calculateKilometers(current.depPort, current.arrPort) : 0;
+    const prevDist = (prev.depPort && prev.arrPort) ? calculateKilometers(prev.depPort, prev.arrPort) : 0;
+    const currDist = (current.depPort && current.arrPort) ? calculateKilometers(current.depPort, current.arrPort) : 0;
     return currDist > prevDist ? current : prev;
-  }, flightEvents[0] || {});
+  }, flightEvents[0] || {} as Partial<DutyEvent>);
 
-  if (longestFlight.flightNumber) {
+  if (longestFlight.flightNumber && longestFlight.depPort && longestFlight.arrPort) {
     const dist = calculateKilometers(longestFlight.depPort, longestFlight.arrPort);
     candidates.push({
       key: 'marathon',

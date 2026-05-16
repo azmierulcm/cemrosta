@@ -37,8 +37,6 @@ export function calculateKilometers(depIata: string, arrIata: string): number {
   return Math.round(R * c);
 }
 
-import { DutyEvent } from '../../types';
-
 export function formatBlockHours(events: DutyEvent[]): string {
   let totalMinutes = 0;
   events.forEach(e => {

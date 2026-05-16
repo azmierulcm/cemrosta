@@ -2,7 +2,7 @@ import { Destination, DutyEvent } from '@/lib/types';
 
 const IATA_MAP: Record<string, { city: string, country: string, color: string, shape: 'oval' | 'hexagon' | 'rectangle' }> = {
   'LHR': { city: 'London', country: 'United Kingdom', color: 'border-gray-500 text-gray-600', shape: 'oval' },
-  'KUL': { city: 'Kuala Lumpur', country: 'Malaysia', color: 'border-rausch text-rausch', shape: 'rectangle' },
+  'KUL': { city: 'Kuala Lumpur', country: 'Malaysia', color: 'border-accent text-accent', shape: 'rectangle' },
   'CAN': { city: 'Guangzhou', country: 'China', color: 'border-red-500 text-red-600', shape: 'hexagon' },
   'NRT': { city: 'Tokyo', country: 'Japan', color: 'border-pink-400 text-pink-500', shape: 'oval' },
   'SYD': { city: 'Sydney', country: 'Australia', color: 'border-emerald-500 text-emerald-600', shape: 'rectangle' },
@@ -27,18 +27,23 @@ export function extractDestinations(events: DutyEvent[]): Destination[] {
       const existing = destMap.get(iata);
       if (existing) {
         existing.count += 1;
+        existing.visits += 1;
         if (new Date(event.date) > new Date(existing.lastVisited)) {
           existing.lastVisited = event.date;
         }
       } else {
         destMap.set(iata, {
           iata,
+          name: meta.city,
           city: meta.city,
           country: meta.country,
+          region: 'Asia', // Placeholder
           count: 1,
+          visits: 1,
           lastVisited: event.date,
           colorTheme: meta.color,
-          shape: meta.shape
+          shape: meta.shape,
+          unlocked: true
         });
       }
     }

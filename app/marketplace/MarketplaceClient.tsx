@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from '@/components/shared/Navbar';
 import { MarketplaceCard } from '@/components/product/marketplace/MarketplaceCard';
 import { CreateAdModal } from '@/components/product/marketplace/CreateAdModal';
@@ -11,7 +11,28 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { trackEvent } from '@/lib/analytics/events';
 
-// ... (Listing interface and constants remain same)
+interface Listing {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  condition: string;
+  seller_id: string;
+  image_urls?: string[];
+  created_at: string;
+  expires_at: string;
+  profiles: {
+    full_name: string;
+    avatar_url: string;
+    rank: string;
+    airline: string;
+    verified_at: string | null;
+  };
+}
+
+const CATEGORIES = ["All", "Headsets", "Luggage", "Watches", "Uniforms", "Manuals", "Other"];
+const CONDITIONS = ["All", "New", "Lightly used", "Well used", "For parts"];
 
 export default function MarketplaceClient() {
   const { user, isLoading: authLoading } = useAuth();
@@ -32,59 +53,52 @@ export default function MarketplaceClient() {
     }
   }, [user, authLoading, router]);
 
-  useEffect(() => {
-    let active = true;
-    const fetchListings = async () => {
-      if (!user) return;
-      
-      // Delay state update to avoid synchronous cascading renders
-      await Promise.resolve();
-      if (!active) return;
-      setIsLoading(true);
-      
-      try {
-        let query = supabase
-          .from('marketplace_listings')
-          .select('*, profiles(full_name, avatar_url, rank, airline, verified_at)')
-          .eq('status', 'available')
-          .gt('expires_at', new Date().toISOString())
-          .order('created_at', { ascending: false });
+  const fetchListings = useCallback(async () => {
+    if (!user) return;
+    
+    // Delay state update to avoid synchronous cascading renders
+    await Promise.resolve();
+    setIsLoading(true);
+    
+    try {
+      let query = supabase
+        .from('marketplace_listings')
+        .select('*, profiles(full_name, avatar_url, rank, airline, verified_at)')
+        .eq('status', 'available')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false });
 
-        if (activeCategory !== "All") {
-          query = query.eq('category', activeCategory);
-        }
-
-        if (activeCondition !== "All") {
-          query = query.eq('condition', activeCondition);
-        }
-
-        if (searchQuery) {
-          query = query.ilike('title', `%${searchQuery}%`);
-        }
-
-        const { data, error } = await query;
-        if (error) throw error;
-
-        if (!active) return;
-
-        let filteredData = (data as unknown as Listing[]) || [];
-        if (verifiedOnly) {
-          filteredData = filteredData.filter(item => item.profiles?.verified_at);
-        }
-
-        setListings(filteredData);
-      } catch (err) {
-        console.error('Failed to fetch listings:', err);
-      } finally {
-        if (active) {
-          setIsLoading(false);
-        }
+      if (activeCategory !== "All") {
+        query = query.eq('category', activeCategory);
       }
-    };
 
-    fetchListings();
-    return () => { active = false; };
+      if (activeCondition !== "All") {
+        query = query.eq('condition', activeCondition);
+      }
+
+      if (searchQuery) {
+        query = query.ilike('title', `%${searchQuery}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let filteredData = (data as unknown as Listing[]) || [];
+      if (verifiedOnly) {
+        filteredData = filteredData.filter(item => item.profiles?.verified_at);
+      }
+
+      setListings(filteredData);
+    } catch (err) {
+      console.error('Failed to fetch listings:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, [user, activeCategory, activeCondition, searchQuery, verifiedOnly]);
+
+  useEffect(() => {
+    fetchListings();
+  }, [fetchListings]);
 
   if (authLoading || !user) {
     return (

@@ -14,7 +14,7 @@ interface Listing {
   price: number;
   condition: string;
   category: string;
-  image_urls: string[];
+  image_urls?: string[];
   seller_id: string;
   created_at: string;
   expires_at: string;

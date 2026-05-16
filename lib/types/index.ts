@@ -13,17 +13,24 @@ export interface DutyEvent {
   signOff?: string;
   duration?: string;
   hotel?: string;
+  aircraftType?: string;
   description?: string;
 }
 
 export interface Destination {
+  iata: string;
+  name: string;
   city: string;
   country: string;
-  iata: string;
+  region: string;
+  visits: number;
   count: number;
   lastVisited: string;
   colorTheme: string;
   shape: 'oval' | 'hexagon' | 'rectangle';
+  unlocked: boolean;
+  isHome?: boolean;
+  isNew?: boolean;
 }
 
 export interface RosterStats {
@@ -52,16 +59,7 @@ export interface ProfileData {
     blockMinutes: number;
     newCity: string | null;
   };
-  destinations: {
-    iata: string;
-    name: string;
-    country: string;
-    region: string;
-    visits: number;
-    unlocked: boolean;
-    isNew?: boolean;
-    isHome?: boolean;
-  }[];
+  destinations: Destination[];
 }
 
 export interface RosterData {

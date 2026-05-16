@@ -43,11 +43,17 @@ export default function ProfileClient() {
       newCity: roster.destinations?.[0]?.iata || null
     },
     destinations: roster.destinations?.map(d => ({
+      ...d,
       iata: d.iata,
       name: d.city,
+      city: d.city,
       country: d.country,
       region: 'Asia', // placeholder
-      visits: 1,
+      visits: d.count,
+      count: d.count,
+      lastVisited: d.lastVisited,
+      colorTheme: d.colorTheme,
+      shape: d.shape,
       unlocked: true
     })) || []
   } : null;
