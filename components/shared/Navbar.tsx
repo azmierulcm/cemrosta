@@ -19,6 +19,8 @@ export const Navbar = () => {
     await supabase.auth.signOut();
     setUser(null);
     reset();
+    // Force a hard reload to the home page to ensure all contexts are cleared
+    window.location.href = '/';
   };
 
   const scrollToTop = () => {

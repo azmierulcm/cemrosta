@@ -136,10 +136,10 @@ export default function HomeClient() {
         </AnimatePresence>
       </div>
 
-      {!roster && <Footer />}
+      {!roster && !user && <Footer />}
 
       {/* Mobile Sticky Upload CTA */}
-      {!roster && (
+      {!roster && !!user && (
         <AnimatePresence>
           {showStickyCTA && (
             <motion.div
