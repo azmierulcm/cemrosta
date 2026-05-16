@@ -96,19 +96,40 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
   try {
     // 1. Skip profiles table for now due to schema cache issues
     
-    // 2. Ensure Crew Profile exists (Force userId as the primary ID)
+    // 2. Ensure Crew Profile exists (Refactored to prevent handle conflicts)
+    let { data: existingProfile } = await supabase
+      .from('crew_profiles')
+      .select('id, handle')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    let crewProfileId = userId;
+    
+    const profilePayload = {
+      user_id: userId,
+      display_name: rosterData.crewName || 'Crew Member',
+      rank: 'Crew', 
+      base_iata: 'KUL',
+      airline_code: 'MH',
+      updated_at: new Date().toISOString()
+    };
+
+    // If it doesn't exist, we also need to set the initial handle and ID
+    if (!existingProfile) {
+      Object.assign(profilePayload, {
+        id: userId,
+        handle: `crew.${userId.slice(0, 5)}.${Math.floor(Math.random() * 1000)}` // Added randomness to prevent collisions
+      });
+    } else {
+      crewProfileId = existingProfile.id;
+    }
+
     const { data: crewProfile, error: crewProfileError } = await supabase
       .from('crew_profiles')
       .upsert({
-        id: userId, // Ensure ID is the same as Auth User ID
-        user_id: userId,
-        display_name: rosterData.crewName || 'Crew Member',
-        rank: 'Crew', 
-        base_iata: 'KUL',
-        airline_code: 'MH',
-        handle: `crew.${userId.slice(0, 5)}`,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'id' }) // Use Primary Key for conflict resolution
+        id: crewProfileId,
+        ...profilePayload
+      }, { onConflict: 'id' })
       .select('id')
       .single();
 
