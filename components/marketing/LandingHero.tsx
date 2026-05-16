@@ -43,7 +43,7 @@ export const LandingHero = () => {
 
           <div className="flex flex-col items-center gap-8 mb-20">
             <button 
-              onClick={openAuthModal}
+              onClick={() => openAuthModal()}
               className="bg-accent text-white px-12 py-6 rounded-full font-black text-xl shadow-2xl shadow-accent/20 hover:bg-accent/90 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-4"
             >
               Get Started for Free
