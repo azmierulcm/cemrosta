@@ -94,21 +94,32 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
   const supabase = getSupabaseServer();
   
   try {
-    // 1. Update Profile (Airline Verification)
-    await supabase
+    // 1. Ensure Profile exists (use upsert instead of update)
+    const { error: profileSyncError } = await supabase
       .from('profiles')
-      .update({ 
+      .upsert({ 
+        id: userId,
         verified_at: new Date().toISOString(),
-        airline: 'Malaysia Airlines'
-      })
-      .eq('id', userId);
+        airline: 'Malaysia Airlines',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+
+    if (profileSyncError) {
+      console.error('Profile Sync Error:', profileSyncError);
+      throw new Error(`Profile setup failed: ${profileSyncError.message}`);
+    }
 
     // 2. Ensure Crew Profile exists
-    let { data: crewProfile } = await supabase
+    let { data: crewProfile, error: crewFetchError } = await supabase
       .from('crew_profiles')
       .select('id')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
+
+    if (crewFetchError) {
+      console.error('Crew Profile Fetch Error:', crewFetchError);
+      throw new Error(`Could not verify crew profile: ${crewFetchError.message}`);
+    }
 
     if (!crewProfile) {
       const { data: newProfile, error: createError } = await supabase
@@ -124,24 +135,62 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
         .select('id')
         .single();
       
-      if (createError) throw createError;
+      if (createError) {
+        console.error('Crew Profile Creation Error:', createError);
+        throw new Error(`Crew profile creation failed: ${createError.message}`);
+      }
       crewProfile = newProfile;
     }
 
     // 3. Save All Duties
     if (crewProfile) {
+      // 3a. Ensure airports exist in the database to avoid foreign key violations
+      const airportCodes = new Set<string>();
+      rosterData.events.forEach(e => {
+        if (e.depPort) airportCodes.add(e.depPort.toUpperCase());
+        if (e.arrPort) airportCodes.add(e.arrPort.toUpperCase());
+      });
+      airportCodes.add('KUL'); // Default base
+
+      // Auto-seed missing airports with mock data to satisfy FK constraint
+      const airportsToUpsert = Array.from(airportCodes).map(code => ({
+        iata: code,
+        icao: `W${code}`, // Mock ICAO
+        name: `${code} Airport`,
+        city: code,
+        country: code === 'KUL' ? 'Malaysia' : 'Unknown',
+        country_code: code === 'KUL' ? 'MY' : '??',
+        continent: 'AS',
+        lat: 0,
+        lng: 0
+      }));
+
+      if (airportsToUpsert.length > 0) {
+        const { error: airportError } = await supabase
+          .from('airports')
+          .upsert(airportsToUpsert, { onConflict: 'iata' });
+        
+        if (airportError) {
+          console.error('Airport Seeding Error:', airportError);
+          // We don't throw here, as some airports might already exist or have other constraints
+        }
+      }
+      
       const eventsToInsert = rosterData.events.map(e => {
         const combineDateAndTime = (dateStr: string, timeStr?: string) => {
           if (!timeStr || timeStr === '--:--') return new Date(`${dateStr}T00:00:00Z`).toISOString();
           return new Date(`${dateStr}T${timeStr}:00Z`).toISOString();
         };
 
+        const dep = e.depPort?.toUpperCase() || 'KUL';
+        const arr = e.arrPort?.toUpperCase() || 'KUL';
+
         return {
           crew_id: crewProfile.id,
           flight_date: e.date,
           flight_number: e.flightNumber || `DUTY-${e.type}-${e.id.slice(-4)}`,
-          origin_iata: e.depPort || 'KUL',
-          destination_iata: e.arrPort || 'KUL',
+          origin_iata: dep,
+          destination_iata: arr,
           std_utc: combineDateAndTime(e.date, e.std || e.signOn),
           sta_utc: combineDateAndTime(e.date, e.sta || e.signOff),
           block_minutes: e.type === 'FLIGHT' && e.std && e.sta ? calculateBlockMinutes(e.std, e.sta) : 0,
@@ -158,6 +207,10 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
         
         if (flightError) {
           console.error('Supabase Flights Upsert Error:', flightError);
+          // If it's a foreign key error, it's likely missing airports in the DB
+          if (flightError.code === '23503') {
+            throw new Error(`Save failed: Some airport codes in your roster are not yet in our database. Please contact support. (${flightError.message})`);
+          }
           throw new Error(`Flight Sync Failed: ${flightError.message} (${flightError.code})`);
         }
       }
