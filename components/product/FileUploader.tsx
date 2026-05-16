@@ -42,6 +42,17 @@ export const FileUploader = () => {
 
   const handleConfirmSync = async () => {
     if (!previewData) return;
+
+    // Check for duplicate month in history
+    const isDuplicate = history.some(
+      (h) => h.month.toLowerCase() === previewData.month.toLowerCase() && h.year === previewData.year
+    );
+
+    if (isDuplicate) {
+      setError(`A roster for ${previewData.month} ${previewData.year} already exists in your history. Please delete the existing records first if you wish to re-upload.`);
+      return;
+    }
+
     setIsSyncing(true);
     
     const result = await syncToSupabase(previewData);

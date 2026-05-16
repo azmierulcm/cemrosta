@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Plane, Clock, MapPin, Hotel, Download, ChevronDown, Loader2, Edit3 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plane, Clock, MapPin, Hotel, Download, ChevronDown, Loader2, Edit3, X } from 'lucide-react';
 import { useRoster } from '@/lib/contexts/RosterContext';
 import { DutyEvent } from '@/lib/types';
 import { generateICS, downloadICS } from '@/lib/utils/calendar';
@@ -10,6 +10,7 @@ import { DutyCalendar } from './DutyCalendar';
 import { DestinationPatch } from './DestinationPatch';
 import { EditDutyModal } from './EditDutyModal';
 import { CalendarTab } from './CalendarTab';
+import { FileUploader } from './FileUploader';
 import { updateDuty, deleteDuty } from '@/lib/actions/roster';
 
 export const EventCard = ({ event, index, onEdit }: { event: DutyEvent; index: number; onEdit: (e: DutyEvent) => void }) => {
@@ -128,6 +129,7 @@ export const Dashboard = () => {
   const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
   const [editingEvent, setEditingEvent] = React.useState<DutyEvent | null>(null);
   const [activeTab, setActiveTab] = React.useState<'timeline' | 'calendar'>('timeline');
+  const [isUploadModalOpen, setIsUploadModalOpen] = React.useState(false);
 
   if (!roster) return null;
 
@@ -165,6 +167,38 @@ export const Dashboard = () => {
           onDelete={handleDeleteDuty}
         />
       )}
+
+      {/* Upload Modal */}
+      <AnimatePresence>
+        {isUploadModalOpen && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsUploadModalOpen(false)}
+              className="absolute inset-0 bg-white/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative z-10 w-full max-w-2xl bg-white rounded-[3rem] p-4 shadow-2xl border border-border"
+            >
+              <div className="flex justify-between items-center p-8">
+                <h3 className="text-3xl font-black text-text tracking-tighter uppercase italic">New Roster.</h3>
+                <button onClick={() => setIsUploadModalOpen(false)} className="p-3 hover:bg-surface-2 rounded-full transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+              <FileUploader />
+              <div className="p-8 text-center">
+                 <p className="text-xs font-bold text-text-muted">Upload a different month to expand your passport history.</p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-16 gap-8">
         <div>
@@ -221,10 +255,10 @@ export const Dashboard = () => {
         <div className="flex items-center gap-4">
           {isLoading && <Loader2 className="animate-spin text-accent mr-4" />}
           <button 
-            onClick={reset}
-            className="px-8 py-4 rounded-full font-bold text-text-muted hover:bg-surface-2 hover:text-text transition-all active:scale-95 border border-transparent hover:border-border"
+            onClick={() => setIsUploadModalOpen(true)}
+            className="px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest text-text-muted hover:bg-surface-2 hover:text-text transition-all active:scale-95 border border-border/50"
           >
-            Reset
+            Upload Roster
           </button>
           <button 
             onClick={handleExport}
