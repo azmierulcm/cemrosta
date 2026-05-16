@@ -78,58 +78,66 @@ export const EditDutyModal = ({ isOpen, onClose, event, onSave, onDelete }: Edit
                     <option value="TRAINING">Training</option>
                   </select>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-text-subtle uppercase tracking-widest font-mono">Flight Number</label>
-                  <input 
-                    type="text"
-                    value={formData.flightNumber || ''}
-                    onChange={(e) => setFormData({...formData, flightNumber: e.target.value})}
-                    placeholder="e.g. MH 4"
-                    className="w-full bg-surface-2 border border-border p-4 rounded-2xl font-bold focus:ring-2 focus:ring-accent outline-none"
-                  />
-                </div>
+                {formData.type === 'FLIGHT' && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-text-subtle uppercase tracking-widest font-mono">Flight Number</label>
+                    <input 
+                      type="text"
+                      value={formData.flightNumber || ''}
+                      onChange={(e) => setFormData({...formData, flightNumber: e.target.value})}
+                      placeholder="e.g. MH 4"
+                      className="w-full bg-surface-2 border border-border p-4 rounded-2xl font-bold focus:ring-2 focus:ring-accent outline-none"
+                    />
+                  </div>
+                )}
               </div>
+
+              {formData.type === 'FLIGHT' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-text-subtle uppercase tracking-widest font-mono">Origin (IATA)</label>
+                    <input 
+                      type="text"
+                      value={formData.depPort || ''}
+                      onChange={(e) => setFormData({...formData, depPort: e.target.value.toUpperCase()})}
+                      maxLength={3}
+                      className="w-full bg-surface-2 border border-border p-4 rounded-2xl font-bold focus:ring-2 focus:ring-accent outline-none uppercase font-mono"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-text-subtle uppercase tracking-widest font-mono">Destination (IATA)</label>
+                    <input 
+                      type="text"
+                      value={formData.arrPort || ''}
+                      onChange={(e) => setFormData({...formData, arrPort: e.target.value.toUpperCase()})}
+                      maxLength={3}
+                      className="w-full bg-surface-2 border border-border p-4 rounded-2xl font-bold focus:ring-2 focus:ring-accent outline-none uppercase font-mono"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-text-subtle uppercase tracking-widest font-mono">Origin (IATA)</label>
+                  <label className="text-[10px] font-black text-text-subtle uppercase tracking-widest font-mono">
+                    {formData.type === 'STANDBY' ? 'Start Standby' : 'STD (Departure Time)'}
+                  </label>
                   <input 
                     type="text"
-                    value={formData.depPort || ''}
-                    onChange={(e) => setFormData({...formData, depPort: e.target.value.toUpperCase()})}
-                    maxLength={3}
-                    className="w-full bg-surface-2 border border-border p-4 rounded-2xl font-bold focus:ring-2 focus:ring-accent outline-none uppercase font-mono"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-text-subtle uppercase tracking-widest font-mono">Destination (IATA)</label>
-                  <input 
-                    type="text"
-                    value={formData.arrPort || ''}
-                    onChange={(e) => setFormData({...formData, arrPort: e.target.value.toUpperCase()})}
-                    maxLength={3}
-                    className="w-full bg-surface-2 border border-border p-4 rounded-2xl font-bold focus:ring-2 focus:ring-accent outline-none uppercase font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-text-subtle uppercase tracking-widest font-mono">STD (Departure Time)</label>
-                  <input 
-                    type="text"
-                    value={formData.std || ''}
-                    onChange={(e) => setFormData({...formData, std: e.target.value})}
+                    value={formData.std || formData.signOn || ''}
+                    onChange={(e) => setFormData({...formData, std: e.target.value, signOn: e.target.value})}
                     placeholder="HH:MM"
                     className="w-full bg-surface-2 border border-border p-4 rounded-2xl font-bold focus:ring-2 focus:ring-accent outline-none font-mono"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-text-subtle uppercase tracking-widest font-mono">STA (Arrival Time)</label>
+                  <label className="text-[10px] font-black text-text-subtle uppercase tracking-widest font-mono">
+                    {formData.type === 'STANDBY' ? 'Finish Standby' : 'STA (Arrival Time)'}
+                  </label>
                   <input 
                     type="text"
-                    value={formData.sta || ''}
-                    onChange={(e) => setFormData({...formData, sta: e.target.value})}
+                    value={formData.sta || formData.signOff || ''}
+                    onChange={(e) => setFormData({...formData, sta: e.target.value, signOff: e.target.value})}
                     placeholder="HH:MM"
                     className="w-full bg-surface-2 border border-border p-4 rounded-2xl font-bold focus:ring-2 focus:ring-accent outline-none font-mono"
                   />
