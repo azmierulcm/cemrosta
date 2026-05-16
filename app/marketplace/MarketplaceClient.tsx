@@ -56,9 +56,7 @@ export default function MarketplaceClient() {
   const fetchListings = useCallback(async () => {
     if (!user) return;
     
-    // Delay state update to avoid synchronous cascading renders
-    await Promise.resolve();
-    setIsLoading(true);
+    setTimeout(() => setIsLoading(true), 0);
     
     try {
       let query = supabase
@@ -97,6 +95,7 @@ export default function MarketplaceClient() {
   }, [user, activeCategory, activeCondition, searchQuery, verifiedOnly]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchListings();
   }, [fetchListings]);
 

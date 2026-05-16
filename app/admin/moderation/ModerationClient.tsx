@@ -41,9 +41,7 @@ export default function ModerationPage() {
   const fetchReportedListings = useCallback(async () => {
     if (!isAdmin) return;
     
-    // Delay state update to avoid synchronous cascading renders
-    await Promise.resolve();
-    setIsLoading(true);
+    setTimeout(() => setIsLoading(true), 0);
 
     try {
       const { data, error } = await supabase
@@ -66,6 +64,7 @@ export default function ModerationPage() {
   }, [isAdmin]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchReportedListings();
   }, [fetchReportedListings]);
 

@@ -37,6 +37,15 @@ export function calculateKilometers(depIata: string, arrIata: string): number {
   return Math.round(R * c);
 }
 
+export function calculateBlockMinutes(std: string, sta: string): number {
+  const [h1, m1] = std.split(':').map(Number);
+  const [h2, m2] = sta.split(':').map(Number);
+  if (isNaN(h1) || isNaN(h2)) return 0;
+  let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+  if (diff < 0) diff += 1440; // Midnight crossing
+  return diff;
+}
+
 export function formatBlockHours(events: DutyEvent[]): string {
   let totalMinutes = 0;
   events.forEach(e => {

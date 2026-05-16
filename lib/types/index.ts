@@ -1,4 +1,4 @@
-export type DutyType = 'FLIGHT' | 'STANDBY' | 'LAYOVER' | 'OFF' | 'OTHER';
+export type DutyType = 'FLIGHT' | 'STANDBY' | 'LAYOVER' | 'OFF' | 'LEAVE' | 'TRAINING' | 'OTHER';
 
 export interface DutyEvent {
   id: string;

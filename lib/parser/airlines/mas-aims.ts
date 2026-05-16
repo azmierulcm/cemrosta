@@ -89,6 +89,33 @@ export function parseMasAims(text: string): ParsedRoster {
         description: `Standby ${code.toUpperCase()}`,
       });
     });
+
+    // 5. Extract Other Duties (OFF, LEAVE, TRAINING)
+    // Heuristic for MAS codes
+    if (flightMatches.length === 0 && standbyMatches.length === 0) {
+      if (chunk.match(/\bOFF\b|\bGDO\b/i)) {
+        duties.push({
+          id: `OFF-${currentDate}`,
+          type: 'OFF',
+          date: currentDate,
+          description: 'Day Off',
+        });
+      } else if (chunk.match(/\bLVE\b|\bLEAVE\b|\bAL\b/i)) {
+        duties.push({
+          id: `LVE-${currentDate}`,
+          type: 'LEAVE',
+          date: currentDate,
+          description: 'Annual Leave',
+        });
+      } else if (chunk.match(/\bSIM\b|\bGRD\b|\bTRG\b|\bTRAINING\b/i)) {
+        duties.push({
+          id: `TRG-${currentDate}`,
+          type: 'TRAINING',
+          date: currentDate,
+          description: 'Training/Simulator',
+        });
+      }
+    }
   }
 
   return {

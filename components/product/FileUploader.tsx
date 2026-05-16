@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, FileRejection } from 'react-dropzone';
 import { Upload, FileText, Loader2, AlertCircle, XCircle } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useRoster } from '@/lib/contexts/RosterContext';
@@ -43,7 +43,7 @@ export const FileUploader = () => {
     }
   }, [setLoading, setError, setRoster, userId]);
 
-  const onDropRejected = useCallback((fileRejections: any) => {
+  const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
     const error = fileRejections[0]?.errors[0];
     console.error('File rejected:', fileRejections);
     if (error?.code === 'file-invalid-type') {

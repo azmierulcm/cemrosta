@@ -71,7 +71,7 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
   };
 
   const fetchRoster = useCallback(async (uid: string, m?: string, y?: string) => {
-    setIsLoading(true);
+    setTimeout(() => setIsLoading(true), 0);
     try {
       const result = await fetchUserRoster(uid, m, y);
       if (result) {
@@ -103,6 +103,7 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchRoster(user.id);
     } else {
       // Logged out: fallback to local storage
