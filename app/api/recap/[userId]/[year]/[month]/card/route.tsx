@@ -15,6 +15,11 @@ export async function GET(
   const { searchParams } = new URL(req.url);
   const download = searchParams.get('download') === '1';
 
+  // Load font data for robust rendering (next/og requires .ttf)
+  const fontData = await fetch(
+    new URL('https://github.com/google/fonts/raw/main/ofl/inter/Inter-Bold.ttf')
+  ).then((res) => res.arrayBuffer());
+
   const supabase = getSupabaseServer();
 
   // 1. Fetch Crew Profile
@@ -78,6 +83,14 @@ export async function GET(
     {
       width: 1200,
       height: 630,
+      fonts: [
+        {
+          name: 'Inter',
+          data: fontData,
+          style: 'normal',
+          weight: 700,
+        },
+      ],
       headers: download ? {
         'Content-Disposition': `attachment; filename="Recap-${month}-${year}-Card.png"`,
       } : {},

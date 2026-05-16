@@ -41,7 +41,7 @@ export const StoriesTemplate = ({ data, superlative, watermark = true }: Templat
         backgroundImage: 'radial-gradient(circle at 50% 400px, #1C1F27 0%, transparent 70%)',
         padding: '100px 80px',
         color: text,
-        fontFamily: 'sans-serif',
+        fontFamily: 'Inter, sans-serif',
       }}
     >
       {/* Header */}
@@ -109,7 +109,7 @@ export const CardTemplate = ({ data, superlative, watermark = true }: TemplatePr
         display: 'flex',
         backgroundColor: bg,
         color: text,
-        fontFamily: 'sans-serif',
+        fontFamily: 'Inter, sans-serif',
       }}
     >
       {/* Left Column */}
