@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { FileUp, CalendarSync, MapPinned } from 'lucide-react';
 
-const HeroAnimation = () => {
+export const HeroAnimation = () => {
   const shouldReduceMotion = useReducedMotion();
   const [stage, setStage] = useState(0);
 
@@ -87,5 +87,3 @@ const HeroAnimation = () => {
     </div>
   );
 };
-
-export default HeroAnimation;

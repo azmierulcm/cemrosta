@@ -4,7 +4,7 @@ import React from 'react';
 import { Navbar } from '@/components/shared/Navbar';
 import { PublicProfileGallery } from '@/components/product/profile/PublicProfileGallery';
 import { PublicMissionMap } from '@/components/product/profile/PublicMissionMap';
-import DestinationPatch from '@/components/product/DestinationPatch';
+import { DestinationPatch } from '@/components/product/DestinationPatch';
 import { useRoster } from '@/lib/contexts/RosterContext';
 
 export default function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {

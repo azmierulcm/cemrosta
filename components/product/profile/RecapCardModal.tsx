@@ -150,5 +150,3 @@ export const RecapCardModal = ({ isOpen, onClose, userId, month, year }: RecapCa
     </AnimatePresence>
   );
 };
-
-export default RecapCardModal;

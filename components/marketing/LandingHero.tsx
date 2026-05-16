@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { CheckCircle2, ShieldCheck, Zap, Heart } from 'lucide-react';
-import HeroAnimation from './HeroAnimation';
+import { HeroAnimation } from './HeroAnimation';
 import { FileUploader } from '../product/FileUploader';
 import { WaitlistSheet } from './WaitlistSheet';
 

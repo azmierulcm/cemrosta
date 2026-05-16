@@ -5,7 +5,7 @@ import { MapPin, Lock } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { REGION_TAXONOMY, RARITY_COLORS, getRarityTier } from '@/lib/patches/rules';
 import { ILLUSTRATIONS } from '@/lib/patches/illustrations';
-import PatchDetailModal from './PatchDetailModal';
+import { PatchDetailModal } from './PatchDetailModal';
 
 interface Destination {
   iata: string;
