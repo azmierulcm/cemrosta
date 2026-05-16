@@ -156,7 +156,10 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
           .from('flights')
           .upsert(eventsToInsert, { onConflict: 'crew_id, flight_date, flight_number' });
         
-        if (flightError) throw flightError;
+        if (flightError) {
+          console.error('Supabase Flights Upsert Error:', flightError);
+          throw new Error(`Flight Sync Failed: ${flightError.message} (${flightError.code})`);
+        }
       }
 
       // 3b. Recompute Stats & Achievements
