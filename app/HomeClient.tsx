@@ -89,8 +89,8 @@ export default function HomeClient() {
               <AudienceSection />
               <PricingCTA />
             </motion.div>
-          ) : !roster ? (
-            /* Scenario 2: User is logged in but has NO roster - Show Upload Zone */
+          ) : (!roster || roster.events.length === 0) ? (
+            /* Scenario 2: User is logged in but has NO roster events - Show Upload Zone */
             <motion.div
               key="onboarding"
               initial={{ opacity: 0, scale: 0.98 }}
@@ -111,7 +111,7 @@ export default function HomeClient() {
               </div>
             </motion.div>
           ) : (
-            /* Scenario 3: Roster exists - Show Dashboard */
+            /* Scenario 3: Roster with events exists - Show Dashboard */
             <motion.div
               key="dashboard"
               initial={{ opacity: 0, y: 20 }}

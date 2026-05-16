@@ -22,7 +22,24 @@ export async function fetchUserRoster(userId: string, month?: string, year?: str
       .eq('crew_id', profile.id)
       .order('flight_date', { ascending: false });
 
-    if (historyError || !allFlights || allFlights.length === 0) return null;
+    if (historyError) {
+      console.error('History Fetch Error:', historyError);
+      return null;
+    }
+
+    // If no flights found, return an empty roster state instead of null
+    // This tells the UI we successfully checked, but there's no data yet.
+    if (!allFlights || allFlights.length === 0) {
+      return {
+        roster: {
+          events: [],
+          month: new Date().toLocaleString('en-US', { month: 'long' }),
+          year: new Date().getFullYear().toString(),
+          crewName: profile.display_name,
+        },
+        history: []
+      };
+    }
 
     // Build unique month/year list for history
     const historyMap = new Map<string, { month: string, year: string }>();
