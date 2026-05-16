@@ -252,22 +252,39 @@ export async function updateUserProfile(userId: string, updates: any) {
         updated_at: new Date().toISOString()
       }, { onConflict: 'id' });
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error('Base Profile Sync Error:', profileError);
+      throw profileError;
+    }
 
-    // 2. Sync display_name to Crew Profile if full_name is provided
+    // 2. Sync display_name and handle to Crew Profile if full_name is provided
     if (updates.full_name) {
-      await supabase
+      // Fetch existing crew profile to get current state
+      const { data: existing } = await supabase
         .from('crew_profiles')
-        .update({ 
+        .select('id, handle')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const { error: crewError } = await supabase
+        .from('crew_profiles')
+        .upsert({
+          id: existing?.id || userId,
+          user_id: userId,
           display_name: updates.full_name,
+          handle: existing?.handle || `crew.${userId.slice(0, 5)}.${Math.floor(Math.random() * 1000)}`,
           updated_at: new Date().toISOString()
-        })
-        .eq('user_id', userId);
+        }, { onConflict: 'id' });
+
+      if (crewError) {
+        console.error('Crew Profile Name Sync Error:', crewError);
+        // We don't throw here to allow base profile save to succeed
+      }
     }
 
     return { success: true };
   } catch (err) {
     console.error('Update Profile Error:', err);
-    return { success: false, error: err };
+    return { success: false, error: err instanceof Error ? err.message : 'Update failed' };
   }
 }
