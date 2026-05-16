@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, Clock, MapPin, Hotel, Download, ChevronDown, Loader2, Edit3, X } from 'lucide-react';
+import { Plane, Clock, MapPin, Hotel, Download, ChevronDown, Loader2, Edit3, X, Trash2 } from 'lucide-react';
 import { useRoster } from '@/lib/contexts/RosterContext';
 import { DutyEvent } from '@/lib/types';
 import { generateICS, downloadICS } from '@/lib/utils/calendar';
@@ -125,7 +125,7 @@ export const EventCard = ({ event, index, onEdit }: { event: DutyEvent; index: n
 };
 
 export const Dashboard = () => {
-  const { roster, history, switchMonth, reset, isLoading, refresh } = useRoster();
+  const { roster, history, switchMonth, deleteRosterMonth, isLoading, refresh } = useRoster();
   const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
   const [editingEvent, setEditingEvent] = React.useState<DutyEvent | null>(null);
   const [activeTab, setActiveTab] = React.useState<'timeline' | 'calendar'>('timeline');
@@ -152,6 +152,12 @@ export const Dashboard = () => {
     const result = await deleteDuty(id);
     if (result.success) {
       await refresh();
+    }
+  };
+
+  const handleDeleteMonth = async () => {
+    if (confirm(`Are you sure you want to delete ALL data for ${roster.month} ${roster.year}? This cannot be undone.`)) {
+      await deleteRosterMonth(roster.month, roster.year);
     }
   };
 
@@ -259,6 +265,14 @@ export const Dashboard = () => {
             className="px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest text-text-muted hover:bg-surface-2 hover:text-text transition-all active:scale-95 border border-border/50"
           >
             Upload Roster
+          </button>
+          <button 
+            onClick={handleDeleteMonth}
+            className="p-4 rounded-full text-danger hover:bg-danger/5 transition-all active:scale-95 border border-danger/20"
+            title="Delete this month"
+            aria-label="Delete this month's roster"
+          >
+            <Trash2 size={20} />
           </button>
           <button 
             onClick={handleExport}
