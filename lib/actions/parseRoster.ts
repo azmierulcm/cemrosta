@@ -108,7 +108,7 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
         airline_code: 'MH',
         handle: `crew.${userId.slice(0, 5)}`,
         updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' })
+      }, { onConflict: 'id' }) // Use Primary Key for conflict resolution
       .select('id')
       .single();
 
