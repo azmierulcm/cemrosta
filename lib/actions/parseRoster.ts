@@ -80,30 +80,28 @@ export async function parseRoster(formData: FormData): Promise<RosterData> {
         crewProfile = newProfile;
       }
 
-      // 3. Save Flights
+      // 3. Save All Duties
       if (crewProfile) {
-        const flightsToInsert = events
-          .filter(e => e.type === 'FLIGHT')
-          .map(f => ({
-            crew_id: crewProfile.id,
-            flight_date: f.date,
-            flight_number: f.flightNumber,
-            origin_iata: f.depPort,
-            destination_iata: f.arrPort,
-            std_utc: f.std || f.date, // Fallback to date if no time
-            sta_utc: f.sta || f.date,
-            block_minutes: 0, // Should be calculated
-            distance_km: 0, // Should be calculated
-            aircraft_type: f.aircraftType || 'B737',
-            duty_type: 'flight'
-          }));
+        const eventsToInsert = events.map(e => ({
+          crew_id: crewProfile.id,
+          flight_date: e.date,
+          flight_number: e.flightNumber || `DUTY-${e.type}-${e.id.slice(-4)}`,
+          origin_iata: e.depPort || 'KUL',
+          destination_iata: e.arrPort || 'KUL',
+          std_utc: e.std || e.signOn || e.date,
+          sta_utc: e.sta || e.signOff || e.date,
+          block_minutes: 0,
+          distance_km: 0,
+          aircraft_type: e.aircraftType || 'B737',
+          duty_type: e.type.toLowerCase()
+        }));
 
-        if (flightsToInsert.length > 0) {
+        if (eventsToInsert.length > 0) {
           const { error: flightError } = await supabase
             .from('flights')
-            .upsert(flightsToInsert, { onConflict: 'crew_id, flight_date, flight_number' });
+            .upsert(eventsToInsert, { onConflict: 'crew_id, flight_date, flight_number' });
           
-          if (flightError) console.error('Failed to sync flights', flightError);
+          if (flightError) console.error('Failed to sync duties', flightError);
         }
 
         // 4. Generate and Store ICS File

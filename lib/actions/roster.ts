@@ -27,7 +27,7 @@ export async function fetchUserRoster(userId: string, month?: string, year?: str
     const historyMap = new Map<string, { month: string, year: string }>();
     allFlights.forEach(f => {
       const date = new Date(f.flight_date);
-      const m = date.toLocaleString('default', { month: 'long' });
+      const m = date.toLocaleString('en-US', { month: 'long' });
       const y = date.getFullYear().toString();
       const key = `${m}-${y}`;
       if (!historyMap.has(key)) {
@@ -42,8 +42,11 @@ export async function fetchUserRoster(userId: string, month?: string, year?: str
     const targetMonth = month || latest.month;
     const targetYear = year || latest.year;
 
+    // Normalize month names for robust comparison
+    const normalizeMonth = (m: string) => m.toLowerCase().slice(0, 3);
+    const targetMonthNorm = normalizeMonth(targetMonth);
+
     // Build start/end of month for query
-    // Simplified: Just fetch all and filter in JS for now to avoid complex SQL date logic in this action
     const { data: flights, error: flightsError } = await supabase
       .from('flights')
       .select('*')
@@ -54,7 +57,8 @@ export async function fetchUserRoster(userId: string, month?: string, year?: str
 
     const filteredFlights = flights.filter(f => {
       const d = new Date(f.flight_date);
-      return d.toLocaleString('default', { month: 'long' }) === targetMonth && 
+      const m = d.toLocaleString('en-US', { month: 'short' });
+      return normalizeMonth(m) === targetMonthNorm && 
              d.getFullYear().toString() === targetYear;
     });
 
@@ -62,11 +66,13 @@ export async function fetchUserRoster(userId: string, month?: string, year?: str
       id: f.id,
       type: f.duty_type.toUpperCase() as DutyType,
       date: f.flight_date,
-      flightNumber: f.flight_number,
+      flightNumber: f.flight_number.startsWith('DUTY-') ? undefined : f.flight_number,
       depPort: f.origin_iata,
       arrPort: f.destination_iata,
       std: f.std_utc,
       sta: f.sta_utc,
+      signOn: f.std_utc,
+      signOff: f.sta_utc,
       aircraftType: f.aircraft_type,
     }));
 
