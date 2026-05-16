@@ -94,21 +94,7 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
   const supabase = getSupabaseServer();
   
   try {
-    // 1. Ensure Profile exists (use upsert instead of update)
-    const { error: profileSyncError } = await supabase
-      .from('profiles')
-      .upsert({ 
-        id: userId,
-        verified_at: new Date().toISOString(),
-        airline: 'Malaysia Airlines',
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'id' });
-
-    if (profileSyncError) {
-      console.error('Profile Sync Error:', profileSyncError);
-      throw new Error(`Profile setup failed: ${profileSyncError.message}`);
-    }
-
+    // 1. Skip profiles table for now due to schema cache issues
     // 2. Ensure Crew Profile exists
     let { data: crewProfile, error: crewFetchError } = await supabase
       .from('crew_profiles')
