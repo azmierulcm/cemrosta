@@ -1,9 +1,10 @@
 'use server';
 
-import { supabase } from '@/lib/utils/supabase';
+import { getSupabaseServer } from '@/lib/utils/supabase';
 import { RosterData, DutyEvent, DutyType } from '@/lib/types';
 
 export async function fetchUserRoster(userId: string, month?: string, year?: string, includePrevious: boolean = false): Promise<{ roster: RosterData, history: { month: string, year: string }[] } | null> {
+  const supabase = getSupabaseServer();
   try {
     // 1. Get Crew Profile
     const { data: profile, error: profileError } = await supabase
@@ -117,6 +118,7 @@ export async function fetchUserRoster(userId: string, month?: string, year?: str
 }
 
 export async function updateDuty(dutyId: string, updates: Partial<DutyEvent>) {
+  const supabase = getSupabaseServer();
   try {
     const { error } = await supabase
       .from('flights')
@@ -140,6 +142,7 @@ export async function updateDuty(dutyId: string, updates: Partial<DutyEvent>) {
 }
 
 export async function deleteDuty(dutyId: string) {
+  const supabase = getSupabaseServer();
   try {
     const { error } = await supabase
       .from('flights')

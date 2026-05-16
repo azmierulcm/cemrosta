@@ -1,5 +1,5 @@
 import { CrewStats } from '@/lib/types/passport';
-import { supabase } from '@/lib/utils/supabase';
+import { getSupabaseServer } from '@/lib/utils/supabase';
 import { evaluateAchievements } from './achievements/evaluator';
 
 /**
@@ -8,6 +8,7 @@ import { evaluateAchievements } from './achievements/evaluator';
  * but for local development and initial phase, we can trigger it from the frontend.
  */
 export async function recomputeStats(crewId: string) {
+  const supabase = getSupabaseServer();
   // 1. Fetch all flights for the crew
   const { data: flights, error: flightError } = await supabase
     .from('flights')

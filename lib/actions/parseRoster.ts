@@ -3,7 +3,7 @@
 import { getDocumentProxy, extractText } from 'unpdf';
 import { parseRosterText } from '@/lib/parser';
 import { RosterData, DutyEvent, DutyType } from '@/lib/types';
-import { supabase } from '@/lib/utils/supabase';
+import { getSupabaseServer } from '@/lib/utils/supabase';
 import { generateICS } from '@/lib/utils/calendar';
 import { recomputeStats } from '@/lib/passport-stats';
 import { calculateKilometers, calculateBlockMinutes } from '@/lib/utils/geo/haversine';
@@ -16,6 +16,8 @@ export async function parseRoster(formData: FormData): Promise<RosterData> {
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = new Uint8Array(arrayBuffer);
+  
+  const supabase = getSupabaseServer();
   
   try {
     const pdf = await getDocumentProxy(buffer);
@@ -117,26 +119,37 @@ export async function parseRoster(formData: FormData): Promise<RosterData> {
 
       // 3. Save All Duties
       if (crewProfile) {
-        const eventsToInsert = rosterData.events.map(e => ({
-          crew_id: crewProfile.id,
-          flight_date: e.date,
-          flight_number: e.flightNumber || `DUTY-${e.type}-${e.id.slice(-4)}`,
-          origin_iata: e.depPort || 'KUL',
-          destination_iata: e.arrPort || 'KUL',
-          std_utc: e.std || e.signOn || e.date,
-          sta_utc: e.sta || e.signOff || e.date,
-          block_minutes: e.type === 'FLIGHT' && e.std && e.sta ? calculateBlockMinutes(e.std, e.sta) : 0,
-          distance_km: e.type === 'FLIGHT' && e.depPort && e.arrPort ? calculateKilometers(e.depPort, e.arrPort) : 0,
-          aircraft_type: e.aircraftType || 'B737',
-          duty_type: e.type.toLowerCase()
-        }));
+        const eventsToInsert = rosterData.events.map(e => {
+          // Construct proper ISO timestamps for Supabase (std_utc, sta_utc)
+          const combineDateAndTime = (dateStr: string, timeStr?: string) => {
+            if (!timeStr || timeStr === '--:--') return new Date(`${dateStr}T00:00:00Z`).toISOString();
+            // Handle MH format HH:MM
+            return new Date(`${dateStr}T${timeStr}:00Z`).toISOString();
+          };
+
+          return {
+            crew_id: crewProfile.id,
+            flight_date: e.date,
+            flight_number: e.flightNumber || `DUTY-${e.type}-${e.id.slice(-4)}`,
+            origin_iata: e.depPort || 'KUL',
+            destination_iata: e.arrPort || 'KUL',
+            std_utc: combineDateAndTime(e.date, e.std || e.signOn),
+            sta_utc: combineDateAndTime(e.date, e.sta || e.signOff),
+            block_minutes: e.type === 'FLIGHT' && e.std && e.sta ? calculateBlockMinutes(e.std, e.sta) : 0,
+            distance_km: e.type === 'FLIGHT' && e.depPort && e.arrPort ? calculateKilometers(e.depPort, e.arrPort) : 0,
+            aircraft_type: e.aircraftType || 'B737',
+            duty_type: e.type.toLowerCase()
+          };
+        });
 
         if (eventsToInsert.length > 0) {
           const { error: flightError } = await supabase
             .from('flights')
             .upsert(eventsToInsert, { onConflict: 'crew_id, flight_date, flight_number' });
           
-          if (flightError) console.error('Failed to sync duties', flightError);
+          if (flightError) {
+            console.error('Failed to sync duties to Supabase:', flightError.message, flightError.details);
+          }
         }
 
         // 3b. Recompute Stats & Achievements
@@ -146,17 +159,17 @@ export async function parseRoster(formData: FormData): Promise<RosterData> {
         const icsContent = generateICS(rosterData);
         if (icsContent) {
           const filename = `${rosterData.year}-${rosterData.month}.ics`;
-          const path = `${userId}/rosters/${filename}`;
+          const icsPath = `${userId}/rosters/${filename}`;
           
           const { error: uploadError } = await supabase.storage
             .from('roster-files')
-            .upload(path, icsContent, {
+            .upload(icsPath, icsContent, {
               contentType: 'text/calendar',
               upsert: true
             });
 
           if (uploadError) {
-            console.error('Failed to store ICS file:', uploadError);
+            console.error('Failed to store ICS file:', uploadError.message);
           }
         }
       }

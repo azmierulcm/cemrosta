@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/utils/supabase';
+import { getSupabaseServer } from '@/lib/utils/supabase';
 import { Flight, CrewStats, CrewProfile } from '@/lib/types/passport';
 import { ACHIEVEMENT_CATALOG } from './definitions';
 
@@ -7,6 +7,7 @@ import { ACHIEVEMENT_CATALOG } from './definitions';
  * Returns an array of newly earned achievement keys.
  */
 export async function evaluateAchievements(crewId: string, currentStats: CrewStats, lastFlight?: Flight) {
+  const supabase = getSupabaseServer();
   // 1. Fetch user profile for evaluation
   const { data: profile } = await supabase
     .from('crew_profiles')

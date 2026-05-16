@@ -73,6 +73,9 @@ Configure these two buckets in your Supabase Dashboard:
 2. **`marketplace-images`**:
    - Public access: Yes
    - Folder structure suggested: `[listing_id]/[image_name].jpg`
+3. **`roster-files`**:
+   - Public access: No (Authenticated users only)
+   - Folder structure: `[user_id]/rosters/[year]-[month].ics`
 
 ## 4. Digital Passport Tables
 
