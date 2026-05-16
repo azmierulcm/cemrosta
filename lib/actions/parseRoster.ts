@@ -96,7 +96,7 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
   try {
     // 1. Skip profiles table for now due to schema cache issues
     
-    // 2. Ensure Crew Profile exists (Refactored to prevent handle conflicts)
+    // 2. Ensure Crew Profile exists (Refactored to satisfy handle not-null constraint)
     let { data: existingProfile } = await supabase
       .from('crew_profiles')
       .select('id, handle')
@@ -105,7 +105,8 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
 
     let crewProfileId = userId;
     
-    const profilePayload = {
+    // Construct base payload
+    const profilePayload: any = {
       user_id: userId,
       display_name: rosterData.crewName || 'Crew Member',
       rank: 'Crew', 
@@ -114,14 +115,14 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
       updated_at: new Date().toISOString()
     };
 
-    // If it doesn't exist, we also need to set the initial handle and ID
+    // If it doesn't exist, we MUST include a handle and the Primary ID
     if (!existingProfile) {
-      Object.assign(profilePayload, {
-        id: userId,
-        handle: `crew.${userId.slice(0, 5)}.${Math.floor(Math.random() * 1000)}` // Added randomness to prevent collisions
-      });
+      profilePayload.id = userId;
+      profilePayload.handle = `crew.${userId.slice(0, 5)}.${Math.floor(Math.random() * 1000)}`;
     } else {
       crewProfileId = existingProfile.id;
+      // Keep existing handle if it already exists
+      profilePayload.handle = existingProfile.handle;
     }
 
     const { data: crewProfile, error: crewProfileError } = await supabase
