@@ -5,7 +5,7 @@ import { RosterData } from '@/lib/types';
 import { extractDestinations } from '@/lib/utils/destinations';
 import { calculateKilometers, formatBlockHours } from '@/lib/utils/geo/haversine';
 import { useAuth } from './AuthContext';
-import { fetchUserRoster } from '@/lib/actions/roster';
+import { fetchUserRoster, deleteMonthlyRoster } from '@/lib/actions/roster';
 import { recomputeStats } from '@/lib/passport-stats';
 import { saveRosterData } from '@/lib/actions/parseRoster';
 
