@@ -173,3 +173,22 @@ export async function deleteDuty(dutyId: string) {
     return { success: false, error: err };
   }
 }
+
+export async function updateUserProfile(userId: string, updates: any) {
+  const supabase = getSupabaseServer();
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({
+        id: userId,
+        ...updates,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+
+    if (error) throw error;
+    return { success: true };
+  } catch (err) {
+    console.error('Update Profile Error:', err);
+    return { success: false, error: err };
+  }
+}

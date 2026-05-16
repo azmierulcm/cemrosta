@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Camera, Trash2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/lib/utils/supabase';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { updateUserProfile } from '@/lib/actions/roster';
 
 export const EditProfileModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
   const { user, profile, setProfile } = useAuth();
@@ -74,31 +75,22 @@ export const EditProfileModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
       }
 
       const updateData = {
-        id: user.id,
-        full_name: fullName,
-        rank,
-        airline,
-        bio,
-        gallery_urls: finalGalleryUrls.slice(0, 5),
-        updated_at: new Date().toISOString()
-      };
-
-      // 3. Update Profile in DB
-      const { error: dbError } = await supabase
-        .from('profiles')
-        .upsert(updateData)
-        .select();
-
-      if (dbError) throw dbError;
-
-      // 4. Update Global State
-      setProfile({
-        id: user.id,
         full_name: fullName,
         rank,
         airline,
         bio,
         gallery_urls: finalGalleryUrls.slice(0, 5)
+      };
+
+      // 3. Update Profile in DB using Server Action (Bypass RLS)
+      const result = await updateUserProfile(user.id, updateData);
+
+      if (!result.success) throw result.error;
+
+      // 4. Update Global State
+      setProfile({
+        id: user.id,
+        ...updateData
       });
 
       setStatus({ type: 'success', text: 'Profile saved! Refreshing...' });
