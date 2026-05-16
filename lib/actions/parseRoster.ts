@@ -162,7 +162,10 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
         }
       }
       
-      const eventsToInsert = rosterData.events.map(e => {
+      // 3b. Construct and Deduplicate Duties
+      const eventsMap = new Map<string, any>();
+      
+      rosterData.events.forEach(e => {
         const combineDateAndTime = (dateStr: string, timeStr?: string) => {
           if (!timeStr || timeStr === '--:--') return new Date(`${dateStr}T00:00:00Z`).toISOString();
           return new Date(`${dateStr}T${timeStr}:00Z`).toISOString();
@@ -170,11 +173,15 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
 
         const dep = e.depPort?.toUpperCase() || 'KUL';
         const arr = e.arrPort?.toUpperCase() || 'KUL';
+        const flightNum = e.flightNumber || `DUTY-${e.type}-${e.id.slice(-4)}`;
+        
+        // Unique key for deduplication (matches DB constraint)
+        const uniqueKey = `${crewProfile.id}-${e.date}-${flightNum}`;
 
-        return {
+        eventsMap.set(uniqueKey, {
           crew_id: crewProfile.id,
           flight_date: e.date,
-          flight_number: e.flightNumber || `DUTY-${e.type}-${e.id.slice(-4)}`,
+          flight_number: flightNum,
           origin_iata: dep,
           destination_iata: arr,
           std_utc: combineDateAndTime(e.date, e.std || e.signOn),
@@ -183,8 +190,10 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
           distance_km: e.type === 'FLIGHT' && e.depPort && e.arrPort ? calculateKilometers(e.depPort, e.arrPort) : 0,
           aircraft_type: e.aircraftType || 'B737',
           duty_type: e.type.toLowerCase()
-        };
+        });
       });
+
+      const eventsToInsert = Array.from(eventsMap.values());
 
       if (eventsToInsert.length > 0) {
         const { error: flightError } = await supabase
