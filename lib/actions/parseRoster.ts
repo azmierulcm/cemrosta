@@ -95,39 +95,26 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
   
   try {
     // 1. Skip profiles table for now due to schema cache issues
-    // 2. Ensure Crew Profile exists
-    let { data: crewProfile, error: crewFetchError } = await supabase
+    
+    // 2. Ensure Crew Profile exists (Force userId as the primary ID)
+    const { data: crewProfile, error: crewProfileError } = await supabase
       .from('crew_profiles')
+      .upsert({
+        id: userId, // Ensure ID is the same as Auth User ID
+        user_id: userId,
+        display_name: rosterData.crewName || 'Crew Member',
+        rank: 'Crew', 
+        base_iata: 'KUL',
+        airline_code: 'MH',
+        handle: `crew.${userId.slice(0, 5)}`,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' })
       .select('id')
-      .eq('user_id', userId)
-      .maybeSingle();
+      .single();
 
-    if (crewFetchError) {
-      console.error('Crew Profile Fetch Error:', crewFetchError);
-      throw new Error(`Could not verify crew profile: ${crewFetchError.message}`);
-    }
-
-    if (!crewProfile) {
-      const { data: newProfile, error: createError } = await supabase
-        .from('crew_profiles')
-        .upsert({
-          id: userId, // Use userId as the primary key for consistency
-          user_id: userId,
-          display_name: rosterData.crewName || 'Crew Member',
-          rank: 'Crew', 
-          base_iata: 'KUL',
-          airline_code: 'MH',
-          handle: `crew.${userId.slice(0, 5)}`,
-          updated_at: new Date().toISOString()
-        })
-        .select('id')
-        .single();
-      
-      if (createError) {
-        console.error('Crew Profile Creation Error:', createError);
-        throw new Error(`Crew profile creation failed: ${createError.message}`);
-      }
-      crewProfile = newProfile;
+    if (crewProfileError || !crewProfile) {
+      console.error('Crew Profile Sync Error:', crewProfileError);
+      throw new Error(`Could not verify crew profile: ${crewProfileError?.message || 'Unknown error'}`);
     }
 
     // 3. Save All Duties
@@ -160,7 +147,6 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
         
         if (airportError) {
           console.error('Airport Seeding Error:', airportError);
-          // We don't throw here, as some airports might already exist or have other constraints
         }
       }
       
@@ -177,7 +163,6 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
         const arr = e.arrPort?.toUpperCase() || 'KUL';
         const flightNum = e.flightNumber || `DUTY-${e.type}-${e.id.slice(-4)}`;
         
-        // Unique key for deduplication (matches DB constraint)
         const uniqueKey = `${crewProfile.id}-${e.date}-${flightNum}`;
 
         eventsMap.set(uniqueKey, {
@@ -204,15 +189,17 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
         
         if (flightError) {
           console.error('Supabase Flights Upsert Error:', flightError);
-          // If it's a foreign key error, it's likely missing airports in the DB
           if (flightError.code === '23503') {
-            throw new Error(`Save failed: Some airport codes in your roster are not yet in our database. Please contact support. (${flightError.message})`);
+            if (flightError.message.includes('flights_crew_id_fkey')) {
+               throw new Error(`Profile Mismatch: Your crew profile (ID: ${crewProfile.id}) was not found in the flight system. Please try running the SQL setup again.`);
+            }
+            throw new Error(`Save failed: Some airport codes in your roster are not yet in our database. (${flightError.message})`);
           }
           throw new Error(`Flight Sync Failed: ${flightError.message} (${flightError.code})`);
         }
       }
 
-      // 3b. Recompute Stats & Achievements
+      // 3c. Recompute Stats & Achievements
       await recomputeStats(crewProfile.id);
 
       // 4. Generate and Store ICS File
