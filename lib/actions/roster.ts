@@ -137,16 +137,33 @@ export async function fetchUserRoster(userId: string, month?: string, year?: str
 export async function updateDuty(dutyId: string, updates: Partial<DutyEvent>) {
   const supabase = getSupabaseServer();
   try {
+    // 1. Fetch the existing record to get the date if not provided
+    const { data: existing } = await supabase
+      .from('flights')
+      .select('flight_date')
+      .eq('id', dutyId)
+      .single();
+
+    if (!existing) throw new Error('Duty not found');
+
+    const dateStr = updates.date || existing.flight_date;
+
+    const combineDateAndTime = (d: string, t?: string) => {
+      if (!t || t === '--:--' || t.includes('T')) return t; // Already a timestamp or empty
+      return new Date(`${d}T${t}:00Z`).toISOString();
+    };
+
     const { error } = await supabase
       .from('flights')
       .update({
         flight_number: updates.flightNumber,
         origin_iata: updates.depPort,
         destination_iata: updates.arrPort,
-        std_utc: updates.std,
-        sta_utc: updates.sta,
+        std_utc: combineDateAndTime(dateStr, updates.std || updates.signOn),
+        sta_utc: combineDateAndTime(dateStr, updates.sta || updates.signOff),
         aircraft_type: updates.aircraftType,
-        duty_type: updates.type?.toLowerCase()
+        duty_type: updates.type?.toLowerCase(),
+        description: updates.description // Make sure this is in your SQL
       })
       .eq('id', dutyId);
 
@@ -154,7 +171,7 @@ export async function updateDuty(dutyId: string, updates: Partial<DutyEvent>) {
     return { success: true };
   } catch (err) {
     console.error('Update Duty Error:', err);
-    return { success: false, error: err };
+    return { success: false, error: err instanceof Error ? err.message : 'Update failed' };
   }
 }
 

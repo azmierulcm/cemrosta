@@ -119,49 +119,75 @@ export const EditDutyModal = ({ isOpen, onClose, event, onSave, onDelete }: Edit
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-text-subtle uppercase tracking-widest font-mono">
-                    {formData.type === 'STANDBY' ? 'Start Standby' : 'STD (Departure Time)'}
+                  <label className="text-[10px] font-black text-text-subtle uppercase tracking-[0.4em] text-accent font-mono">
+                    {formData.type === 'STANDBY' ? 'Start Standby' : 'STD (Departure)'}
                   </label>
                   <input 
                     type="text"
                     value={formData.std || formData.signOn || ''}
                     onChange={(e) => setFormData({...formData, std: e.target.value, signOn: e.target.value})}
                     placeholder="HH:MM"
-                    className="w-full bg-surface-2 border border-border p-4 rounded-2xl font-bold focus:ring-2 focus:ring-accent outline-none font-mono"
+                    className="w-full bg-surface-2 border border-border p-5 rounded-[1.5rem] font-bold focus:ring-2 focus:ring-accent outline-none font-mono text-xl"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-text-subtle uppercase tracking-widest font-mono">
-                    {formData.type === 'STANDBY' ? 'Finish Standby' : 'STA (Arrival Time)'}
+                  <label className="text-[10px] font-black text-text-subtle uppercase tracking-[0.4em] text-accent font-mono">
+                    {formData.type === 'STANDBY' ? 'Finish Standby' : 'STA (Arrival)'}
                   </label>
                   <input 
                     type="text"
                     value={formData.sta || formData.signOff || ''}
                     onChange={(e) => setFormData({...formData, sta: e.target.value, signOff: e.target.value})}
                     placeholder="HH:MM"
-                    className="w-full bg-surface-2 border border-border p-4 rounded-2xl font-bold focus:ring-2 focus:ring-accent outline-none font-mono"
+                    className="w-full bg-surface-2 border border-border p-5 rounded-[1.5rem] font-bold focus:ring-2 focus:ring-accent outline-none font-mono text-xl"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-text-subtle uppercase tracking-[0.4em] font-mono">Mission Description / Notes</label>
+                <input 
+                  type="text"
+                  value={formData.description || ''}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  placeholder="e.g. Annual Leave, Recurrent Training"
+                  className="w-full bg-surface-2 border border-border p-5 rounded-[1.5rem] font-bold focus:ring-2 focus:ring-accent outline-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-text-subtle uppercase tracking-[0.4em] font-mono">Aircraft Type</label>
+                <input 
+                  type="text"
+                  value={formData.aircraftType || ''}
+                  onChange={(e) => setFormData({...formData, aircraftType: e.target.value.toUpperCase()})}
+                  placeholder="e.g. B737, A350"
+                  className="w-full bg-surface-2 border border-border p-5 rounded-[1.5rem] font-bold focus:ring-2 focus:ring-accent outline-none uppercase font-mono"
+                />
+              </div>
+
+              <div className="flex gap-4 pt-6">
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="flex-1 border border-danger/20 text-danger py-4 rounded-full font-bold flex items-center justify-center gap-2 hover:bg-danger/5 transition-colors"
+                  className="p-5 rounded-full text-danger hover:bg-danger/5 transition-all active:scale-95 border border-danger/20"
                 >
-                  <Trash2 size={18} />
-                  Delete
+                  <Trash2 size={24} />
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-[2] bg-accent text-accent-fg py-4 rounded-full font-bold flex items-center justify-center gap-2 hover:bg-accent-hover transition-all active:scale-95 disabled:opacity-50"
+                  className="flex-1 bg-accent text-accent-fg py-5 rounded-full font-black text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-accent-hover transition-all active:scale-95 disabled:opacity-50 shadow-xl shadow-accent/20"
                 >
-                  {isSaving ? <span className="animate-pulse">Saving...</span> : (
+                  {isSaving ? (
                     <>
-                      <Save size={18} />
-                      Save Changes
+                      <Loader2 className="animate-spin w-5 h-5" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={20} />
+                      Save Mission Changes
                     </>
                   )}
                 </button>
