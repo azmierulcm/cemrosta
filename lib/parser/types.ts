@@ -1,4 +1,4 @@
-export type DutyType = 'FLIGHT' | 'STANDBY' | 'OFF' | 'TRAINING' | 'GROUND';
+export type DutyType = 'FLIGHT' | 'STANDBY' | 'OFF' | 'LEAVE' | 'TRAINING' | 'GROUND';
 
 export interface ParsedFlight {
   flightNumber: string;
