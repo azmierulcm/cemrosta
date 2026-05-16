@@ -3,7 +3,7 @@
 import { supabase } from '@/lib/utils/supabase';
 import { RosterData, DutyEvent, DutyType } from '@/lib/types';
 
-export async function fetchUserRoster(userId: string, month?: string, year?: string): Promise<{ roster: RosterData, history: { month: string, year: string }[] } | null> {
+export async function fetchUserRoster(userId: string, month?: string, year?: string, includePrevious: boolean = false): Promise<{ roster: RosterData, history: { month: string, year: string }[] } | null> {
   try {
     // 1. Get Crew Profile
     const { data: profile, error: profileError } = await supabase
@@ -36,17 +36,21 @@ export async function fetchUserRoster(userId: string, month?: string, year?: str
     });
     const history = Array.from(historyMap.values());
 
-    // 3. Fetch Flights for specific month
-    // Detect latest month if not provided
-    const latest = history[0];
-    const targetMonth = month || latest.month;
-    const targetYear = year || latest.year;
+    // 3. Determine Target Range
+    const now = new Date();
+    const currentMonth = now.toLocaleString('en-US', { month: 'long' });
+    const currentYear = now.getFullYear().toString();
 
-    // Normalize month names for robust comparison
-    const normalizeMonth = (m: string) => m.toLowerCase().slice(0, 3);
-    const targetMonthNorm = normalizeMonth(targetMonth);
+    const targetMonth = month || currentMonth;
+    const targetYear = year || currentYear;
 
-    // Build start/end of month for query
+    // If requested month doesn't exist in history AND it's the default "now",
+    // fallback to latest available month so we don't show an empty dashboard on first login
+    const hasTarget = history.some(h => h.month === targetMonth && h.year === targetYear);
+    const finalMonth = (month || hasTarget) ? targetMonth : history[0].month;
+    const finalYear = (year || hasTarget) ? targetYear : history[0].year;
+
+    // 4. Fetch Flights
     const { data: flights, error: flightsError } = await supabase
       .from('flights')
       .select('*')
@@ -55,11 +59,32 @@ export async function fetchUserRoster(userId: string, month?: string, year?: str
 
     if (flightsError || !flights) return null;
 
+    const normalizeMonth = (m: string) => m.toLowerCase().slice(0, 3);
+    const targetMonthNorm = normalizeMonth(finalMonth);
+
+    // Support for previous month if requested (Step 5)
+    let prevMonthNorm = '';
+    if (includePrevious) {
+      const prevDate = new Date(parseInt(finalYear), history.findIndex(h => h.month === finalMonth && h.year === finalYear) + 1, 0);
+      // Wait, simple way: find the one after target in history
+      const targetIdx = history.findIndex(h => h.month === finalMonth && h.year === finalYear);
+      if (targetIdx !== -1 && history[targetIdx + 1]) {
+        prevMonthNorm = normalizeMonth(history[targetIdx + 1].month);
+      }
+    }
+
     const filteredFlights = flights.filter(f => {
       const d = new Date(f.flight_date);
       const m = d.toLocaleString('en-US', { month: 'short' });
-      return normalizeMonth(m) === targetMonthNorm && 
-             d.getFullYear().toString() === targetYear;
+      const mNorm = normalizeMonth(m);
+      const yStr = d.getFullYear().toString();
+      
+      if (includePrevious && prevMonthNorm) {
+        return (mNorm === targetMonthNorm && yStr === finalYear) || 
+               (mNorm === prevMonthNorm); // simplified year check
+      }
+      
+      return mNorm === targetMonthNorm && yStr === finalYear;
     });
 
     const events: DutyEvent[] = filteredFlights.map(f => ({
@@ -79,8 +104,8 @@ export async function fetchUserRoster(userId: string, month?: string, year?: str
     return {
       roster: {
         events,
-        month: targetMonth,
-        year: targetYear,
+        month: finalMonth,
+        year: finalYear,
         crewName: profile.display_name,
       },
       history
@@ -88,5 +113,43 @@ export async function fetchUserRoster(userId: string, month?: string, year?: str
   } catch (err) {
     console.error('Fetch Roster Error:', err);
     return null;
+  }
+}
+
+export async function updateDuty(dutyId: string, updates: Partial<DutyEvent>) {
+  try {
+    const { error } = await supabase
+      .from('flights')
+      .update({
+        flight_number: updates.flightNumber,
+        origin_iata: updates.depPort,
+        destination_iata: updates.arrPort,
+        std_utc: updates.std,
+        sta_utc: updates.sta,
+        aircraft_type: updates.aircraftType,
+        duty_type: updates.type?.toLowerCase()
+      })
+      .eq('id', dutyId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (err) {
+    console.error('Update Duty Error:', err);
+    return { success: false, error: err };
+  }
+}
+
+export async function deleteDuty(dutyId: string) {
+  try {
+    const { error } = await supabase
+      .from('flights')
+      .delete()
+      .eq('id', dutyId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (err) {
+    console.error('Delete Duty Error:', err);
+    return { success: false, error: err };
   }
 }

@@ -6,6 +6,7 @@ import { extractDestinations } from '@/lib/utils/destinations';
 import { calculateKilometers, formatBlockHours } from '@/lib/utils/geo/haversine';
 import { useAuth } from './AuthContext';
 import { fetchUserRoster } from '@/lib/actions/roster';
+import { recomputeStats } from '@/lib/passport-stats';
 
 interface RosterContextType {
   roster: RosterData | null;
@@ -17,7 +18,9 @@ interface RosterContextType {
   setError: (error: string | null) => void;
   reset: () => void;
   loadSampleRoster: () => void;
-  switchMonth: (month: string, year: string) => Promise<void>;
+  switchMonth: (month: string, year: string, includePrevious?: boolean) => Promise<void>;
+  refresh: () => Promise<void>;
+  refreshStats: () => Promise<void>;
 }
 
 const RosterContext = createContext<RosterContextType | undefined>(undefined);
@@ -70,10 +73,10 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
     setErrorState(null);
   };
 
-  const fetchRoster = useCallback(async (uid: string, m?: string, y?: string) => {
+  const fetchRoster = useCallback(async (uid: string, m?: string, y?: string, includePrevious: boolean = false) => {
     setTimeout(() => setIsLoading(true), 0);
     try {
-      const result = await fetchUserRoster(uid, m, y);
+      const result = await fetchUserRoster(uid, m, y, includePrevious);
       if (result) {
         const processed = processRoster(result.roster);
         setRosterState(processed);
@@ -120,9 +123,21 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, fetchRoster]);
 
-  const switchMonth = async (m: string, y: string) => {
+  const switchMonth = async (m: string, y: string, includePrevious: boolean = false) => {
     if (user) {
-      await fetchRoster(user.id, m, y);
+      await fetchRoster(user.id, m, y, includePrevious);
+    }
+  };
+
+  const refresh = async () => {
+    if (user) {
+      await fetchRoster(user.id, roster?.month, roster?.year);
+    }
+  };
+
+  const refreshStats = async () => {
+    if (user) {
+      await recomputeStats(user.id);
     }
   };
 
@@ -226,6 +241,8 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
         reset,
         loadSampleRoster,
         switchMonth,
+        refresh,
+        refreshStats,
       }}
     >
       {children}

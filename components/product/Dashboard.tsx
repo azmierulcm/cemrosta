@@ -2,14 +2,17 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Plane, Clock, MapPin, Hotel, Download, ChevronDown, Loader2 } from 'lucide-react';
+import { Plane, Clock, MapPin, Hotel, Download, ChevronDown, Loader2, Edit3 } from 'lucide-react';
 import { useRoster } from '@/lib/contexts/RosterContext';
 import { DutyEvent } from '@/lib/types';
 import { generateICS, downloadICS } from '@/lib/utils/calendar';
 import { DutyCalendar } from './DutyCalendar';
 import { DestinationPatch } from './DestinationPatch';
+import { EditDutyModal } from './EditDutyModal';
+import { CalendarTab } from './CalendarTab';
+import { updateDuty, deleteDuty } from '@/lib/actions/roster';
 
-export const EventCard = ({ event, index }: { event: DutyEvent; index: number }) => {
+export const EventCard = ({ event, index, onEdit }: { event: DutyEvent; index: number; onEdit: (e: DutyEvent) => void }) => {
   const isFlight = event.type === 'FLIGHT';
   const isStandby = event.type === 'STANDBY';
 
@@ -20,6 +23,13 @@ export const EventCard = ({ event, index }: { event: DutyEvent; index: number })
       transition={{ delay: index * 0.05 }}
       className="bg-white rounded-[2.5rem] p-8 md:p-10 shadow-sm border border-border mb-8 group hover:shadow-2xl hover:shadow-black/5 transition-all relative overflow-hidden"
     >
+      <button 
+        onClick={() => onEdit(event)}
+        className="absolute top-8 right-8 p-3 rounded-full bg-surface-2 border border-border text-text-muted hover:text-accent hover:border-accent opacity-0 group-hover:opacity-100 transition-all z-20"
+      >
+        <Edit3 size={18} />
+      </button>
+      
       {isFlight && (
         <div className="absolute top-0 right-0 w-32 h-32 bg-accent/3 blur-[40px] -mr-16 -mt-16 rounded-full" />
       )}
@@ -114,8 +124,10 @@ export const EventCard = ({ event, index }: { event: DutyEvent; index: number })
 };
 
 export const Dashboard = () => {
-  const { roster, history, switchMonth, reset, isLoading } = useRoster();
+  const { roster, history, switchMonth, reset, isLoading, refresh } = useRoster();
   const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
+  const [editingEvent, setEditingEvent] = React.useState<DutyEvent | null>(null);
+  const [activeTab, setActiveTab] = React.useState<'timeline' | 'calendar'>('timeline');
 
   if (!roster) return null;
 
@@ -127,8 +139,33 @@ export const Dashboard = () => {
     }
   };
 
+  const handleSaveDuty = async (id: string, updates: Partial<DutyEvent>) => {
+    const result = await updateDuty(id, updates);
+    if (result.success) {
+      await refresh();
+    }
+  };
+
+  const handleDeleteDuty = async (id: string) => {
+    const result = await deleteDuty(id);
+    if (result.success) {
+      await refresh();
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 pb-32 pt-16">
+      {/* Edit Modal */}
+      {editingEvent && (
+        <EditDutyModal 
+          isOpen={!!editingEvent}
+          onClose={() => setEditingEvent(null)}
+          event={editingEvent}
+          onSave={handleSaveDuty}
+          onDelete={handleDeleteDuty}
+        />
+      )}
+
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-16 gap-8">
         <div>
           <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-[0.4em] text-text-subtle font-mono">
@@ -199,58 +236,82 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Destinations Section */}
-      {roster.destinations && roster.destinations.length > 0 && (
-        <section className="mb-24">
-          <div className="flex items-center justify-between mb-10 border-b border-border pb-8">
-            <h3 className="text-3xl font-bold text-text tracking-tighter uppercase italic">Recent Stamps.</h3>
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-text-subtle font-mono bg-surface-2 px-4 py-2 rounded-full border border-border">
-               {roster.destinations.length} Unlocked
-            </div>
-          </div>
-          <div className="flex gap-8 overflow-x-auto pb-10 -mx-4 px-4 scrollbar-hide">
-            {roster.destinations.map((dest) => (
-              <DestinationPatch key={dest.iata} destination={dest} />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Tabs */}
+      <div className="flex items-center gap-4 mb-16 border-b border-border pb-4">
+         <button 
+           onClick={() => setActiveTab('timeline')}
+           className={`px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'timeline' ? 'bg-text text-white shadow-lg' : 'text-text-muted hover:text-text'}`}
+         >
+           Timeline
+         </button>
+         <button 
+           onClick={() => setActiveTab('calendar')}
+           className={`px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'calendar' ? 'bg-text text-white shadow-lg' : 'text-text-muted hover:text-text'}`}
+         >
+           Calendar Tab
+         </button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-        <div className="lg:col-span-8 relative">
-          <div className="flex items-center gap-4 mb-12">
-             <h3 className="text-3xl font-bold text-text tracking-tighter uppercase italic">Timeline.</h3>
-             <div className="h-px flex-1 bg-border/50" />
-          </div>
-          
-          <div className="absolute left-8 top-32 bottom-0 w-px bg-surface-2 -z-10" />
-          {roster.events.map((event, index) => (
-            <EventCard key={event.id + index} event={event} index={index} />
-          ))}
+        <div className={activeTab === 'timeline' ? "lg:col-span-8 relative" : "lg:col-span-12"}>
+          {activeTab === 'timeline' ? (
+            <>
+              {/* Destinations Section */}
+              {roster.destinations && roster.destinations.length > 0 && (
+                <section className="mb-24">
+                  <div className="flex items-center justify-between mb-10 border-b border-border pb-8">
+                    <h3 className="text-3xl font-bold text-text tracking-tighter uppercase italic">Recent Stamps.</h3>
+                    <div className="text-[10px] font-black uppercase tracking-[0.3em] text-text-subtle font-mono bg-surface-2 px-4 py-2 rounded-full border border-border">
+                       {roster.destinations.length} Unlocked
+                    </div>
+                  </div>
+                  <div className="flex gap-8 overflow-x-auto pb-10 -mx-4 px-4 scrollbar-hide">
+                    {roster.destinations.map((dest) => (
+                      <DestinationPatch key={dest.iata} destination={dest} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <div className="flex items-center gap-4 mb-12">
+                 <h3 className="text-3xl font-bold text-text tracking-tighter uppercase italic">Timeline.</h3>
+                 <div className="h-px flex-1 bg-border/50" />
+              </div>
+              
+              <div className="absolute left-8 top-32 bottom-0 w-px bg-surface-2 -z-10" />
+              {roster.events.map((event, index) => (
+                <EventCard key={event.id + index} event={event} index={index} onEdit={setEditingEvent} />
+              ))}
+            </>
+          ) : (
+             <CalendarTab />
+          )}
         </div>
         
-        <div className="lg:col-span-4">
-          <div className="sticky top-32">
-            <div className="flex items-center gap-4 mb-12">
-               <h3 className="text-3xl font-bold text-text tracking-tighter uppercase italic">Calendar.</h3>
-               <div className="h-px flex-1 bg-border/50" />
-            </div>
-            <DutyCalendar />
-            
-            <div className="mt-12 p-8 bg-surface-2 border border-border rounded-[2rem] text-center">
-               <p className="text-[10px] font-black text-text-subtle uppercase tracking-[0.4em] font-mono mb-6">
-                 {"// MISSION SUPPORT"}
-               </p>
-               <p className="text-sm font-bold text-text-muted leading-snug">
-                 Found an error in your roster parsing? <br />
-                 Report it to our flight deck.
-               </p>
-               <button className="mt-6 text-accent font-black text-[10px] uppercase tracking-widest hover:underline">
-                 Open Support Ticket
-               </button>
+        {activeTab === 'timeline' && (
+          <div className="lg:col-span-4">
+            <div className="sticky top-32">
+              <div className="flex items-center gap-4 mb-12">
+                 <h3 className="text-3xl font-bold text-text tracking-tighter uppercase italic">Calendar.</h3>
+                 <div className="h-px flex-1 bg-border/50" />
+              </div>
+              <DutyCalendar />
+              
+              <div className="mt-12 p-8 bg-surface-2 border border-border rounded-[2rem] text-center">
+                 <p className="text-[10px] font-black text-text-subtle uppercase tracking-[0.4em] font-mono mb-6">
+                   {"// MISSION SUPPORT"}
+                 </p>
+                 <p className="text-sm font-bold text-text-muted leading-snug">
+                   Found an error in your roster parsing? <br />
+                   Report it to our flight deck.
+                 </p>
+                 <button className="mt-6 text-accent font-black text-[10px] uppercase tracking-widest hover:underline">
+                   Open Support Ticket
+                 </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
