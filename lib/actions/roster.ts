@@ -6,14 +6,19 @@ import { RosterData, DutyEvent, DutyType } from '@/lib/types';
 export async function fetchUserRoster(userId: string, month?: string, year?: string, includePrevious: boolean = false): Promise<{ roster: RosterData, history: { month: string, year: string }[] } | null> {
   const supabase = getSupabaseServer();
   try {
-    // 1. Get Crew Profile
+    // 1. Get Crew Profile (Use maybeSingle to avoid 406/multiple rows error)
     const { data: profile, error: profileError } = await supabase
       .from('crew_profiles')
       .select('id, display_name')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile) return null;
+    if (profileError) {
+      console.error('Crew Profile Fetch Error:', profileError);
+      return null;
+    }
+
+    if (!profile) return null; // Still show onboarding if no profile exists
 
     // 2. Fetch all flight dates to build history
     const { data: allFlights, error: historyError } = await supabase

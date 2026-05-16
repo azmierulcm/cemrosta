@@ -37,6 +37,12 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setErrorState] = useState<string | null>(null);
 
+  // Use ref to keep track of current roster state for the fetchRoster closure
+  const rosterRef = React.useRef<RosterData | null>(null);
+  useEffect(() => {
+    rosterRef.current = roster;
+  }, [roster]);
+
   const processRoster = useCallback((newRoster: RosterData): RosterData => {
     const destinations = extractDestinations(newRoster.events);
     const totalSectors = newRoster.events.filter((e) => e.type === 'FLIGHT').length;
@@ -68,8 +74,12 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
     
     if (user) {
       // Refresh history after a new upload/set
-      const result = await fetchUserRoster(user.id);
-      if (result) setHistory(result.history);
+      try {
+        const result = await fetchUserRoster(user.id);
+        if (result) setHistory(result.history);
+      } catch (err) {
+        console.error('Failed to sync history after upload', err);
+      }
     }
     
     setIsLoading(false);
@@ -98,8 +108,8 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
   };
 
   const fetchRoster = useCallback(async (uid: string, m?: string, y?: string, includePrevious: boolean = false) => {
-    // Only trigger global loading if we don't have any data to show yet
-    if (!roster) {
+    // Only trigger global loading if we don't have ANY data to show (even from cache)
+    if (!rosterRef.current) {
       setTimeout(() => setIsLoading(true), 0);
     }
     
@@ -121,37 +131,39 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
             const parsed = JSON.parse(saved);
             if (parsed.state?.roster) setRosterState(parsed.state.roster);
           } catch (e) {
-            console.error(e);
+            console.error('Local storage parse error', e);
           }
         }
       }
     } catch (err) {
-      console.error('Failed to fetch roster', err);
+      console.error('Failed to fetch roster from network', err);
     } finally {
       setIsLoading(false);
     }
   }, [processRoster]);
 
   useEffect(() => {
-    // 1. Immediate Cache Load (Optimistic UI)
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.state?.roster) {
-          setRosterState(parsed.state.roster);
-          // If we have cached data, we can potentially lower the loading priority
+    // 1. Initial hydration from cache for instant feel
+    if (!rosterRef.current) {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.state?.roster) {
+            setRosterState(parsed.state.roster);
+          }
+        } catch (e) {
+          console.warn('Initial cache hydration failed', e);
         }
-      } catch (e) {
-        console.error('Cache load failed', e);
       }
     }
 
-    // 2. Network Sync
+    // 2. Network sync
     if (user) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchRoster(user.id);
-    } else {
+    } else if (user === null) {
+      // Specifically handled null user (signed out)
       setIsLoading(false);
     }
   }, [user, fetchRoster]);
