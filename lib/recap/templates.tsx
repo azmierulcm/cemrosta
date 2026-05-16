@@ -38,14 +38,16 @@ export const StoriesTemplate = ({ data, superlative, watermark = true }: Templat
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: bg,
-        backgroundImage: 'radial-gradient(circle at 50% 400px, #1C1F27 0%, transparent 70%)',
         padding: '100px 80px',
         color: text,
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Inter',
       }}
     >
+      {/* Background Glow Simulator */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '800px', backgroundColor: '#1C1F27', opacity: 0.5, borderRadius: '0 0 500px 500px' }} />
+
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '120px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '120px', position: 'relative' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <div style={{ width: '32px', height: '6px', background: accent, opacity: 0.3 }} />
           <div style={{ width: '32px', height: '12px', background: accent, opacity: 0.6 }} />
@@ -55,7 +57,7 @@ export const StoriesTemplate = ({ data, superlative, watermark = true }: Templat
       </div>
 
       {/* Hero Stat */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '140px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '140px', position: 'relative' }}>
         <div style={{ fontSize: 240, fontWeight: 900, lineHeight: 1, color: text, marginBottom: '20px' }}>
           {data.heroValue}
         </div>
@@ -65,17 +67,17 @@ export const StoriesTemplate = ({ data, superlative, watermark = true }: Templat
       </div>
 
       {/* Secondary Stats */}
-      <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '40px', padding: '60px 40px', justifyContent: 'space-around', marginBottom: '120px' }}>
+      <div style={{ display: 'flex', backgroundColor: '#1E2028', border: '1px solid #262A35', borderRadius: '40px', padding: '60px 40px', justifyContent: 'space-around', marginBottom: '120px', position: 'relative' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ fontSize: 60, fontWeight: 800, marginBottom: '10px' }}>{data.sectors}</div>
           <div style={{ fontSize: 20, color: textMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Sectors</div>
         </div>
-        <div style={{ width: '1px', height: '80px', background: 'rgba(255,255,255,0.1)' }} />
+        <div style={{ width: '2px', height: '80px', backgroundColor: '#262A35' }} />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ fontSize: 60, fontWeight: 800, marginBottom: '10px' }}>{data.hours}</div>
           <div style={{ fontSize: 20, color: textMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Hours</div>
         </div>
-        <div style={{ width: '1px', height: '80px', background: 'rgba(255,255,255,0.1)' }} />
+        <div style={{ width: '2px', height: '80px', backgroundColor: '#262A35' }} />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ fontSize: 60, fontWeight: 800, marginBottom: '10px' }}>{data.km}</div>
           <div style={{ fontSize: 20, color: textMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>KM</div>
@@ -83,7 +85,7 @@ export const StoriesTemplate = ({ data, superlative, watermark = true }: Templat
       </div>
 
       {/* Signature Flight */}
-      <div style={{ display: 'flex', flexDirection: 'column', background: surface, border: '1px solid #262A35', borderRadius: '40px', padding: '60px', marginTop: 'auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: surface, border: '1px solid #262A35', borderRadius: '40px', padding: '60px', marginTop: 'auto', position: 'relative' }}>
         <div style={{ fontSize: 24, fontWeight: 800, color: accent, marginBottom: '30px', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
           {superlative.label}
         </div>
@@ -92,7 +94,7 @@ export const StoriesTemplate = ({ data, superlative, watermark = true }: Templat
       </div>
 
       {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '80px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '80px', position: 'relative' }}>
         <div style={{ fontSize: 28, fontWeight: 700, color: text }}>{data.handle || '@crew'}</div>
         {watermark && <div style={{ fontSize: 28, fontWeight: 700, color: '#5E6473' }}>cemrosta.com</div>}
       </div>
@@ -109,7 +111,7 @@ export const CardTemplate = ({ data, superlative, watermark = true }: TemplatePr
         display: 'flex',
         backgroundColor: bg,
         color: text,
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Inter',
       }}
     >
       {/* Left Column */}
