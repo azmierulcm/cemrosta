@@ -11,7 +11,7 @@ import { RosterData } from '@/lib/types';
 
 export const FileUploader = () => {
   const shouldReduceMotion = useReducedMotion();
-  const { isLoading, setLoading, error, setError, setRoster, syncToSupabase } = useRoster();
+  const { history, isLoading, setLoading, error, setError, setRoster, syncToSupabase } = useRoster();
   const { user } = useAuth();
   
   const [previewData, setPreviewData] = React.useState<RosterData | null>(null);
