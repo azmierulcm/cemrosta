@@ -226,7 +226,8 @@ export async function deleteMonthlyRoster(userId: string, month: string, year: s
 export async function updateUserProfile(userId: string, updates: any) {
   const supabase = getSupabaseServer();
   try {
-    const { error } = await supabase
+    // 1. Update Base Profile
+    const { error: profileError } = await supabase
       .from('profiles')
       .upsert({
         id: userId,
@@ -234,7 +235,19 @@ export async function updateUserProfile(userId: string, updates: any) {
         updated_at: new Date().toISOString()
       }, { onConflict: 'id' });
 
-    if (error) throw error;
+    if (profileError) throw profileError;
+
+    // 2. Sync display_name to Crew Profile if full_name is provided
+    if (updates.full_name) {
+      await supabase
+        .from('crew_profiles')
+        .update({ 
+          display_name: updates.full_name,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+    }
+
     return { success: true };
   } catch (err) {
     console.error('Update Profile Error:', err);
