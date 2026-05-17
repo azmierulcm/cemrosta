@@ -18,14 +18,6 @@ export async function GET(
 
     console.log(`Generating Card Recap for ${userId} - ${month} ${year}`);
 
-    // Fetch font data (Inter Bold)
-    const fontData = await fetch(
-      new URL('https://rsms.me/inter/font-files/Inter-Bold.otf')
-    ).then((res) => {
-      if (!res.ok) throw new Error('Failed to fetch font');
-      return res.arrayBuffer();
-    });
-
     const supabase = getSupabaseServer();
 
     // 1. Fetch Crew Profile
@@ -96,14 +88,6 @@ export async function GET(
       {
         width: 1200,
         height: 630,
-        fonts: [
-          {
-            name: 'Inter',
-            data: fontData,
-            style: 'normal',
-            weight: 700,
-          },
-        ],
         headers: download ? {
           'Content-Disposition': `attachment; filename="Recap-${month}-${year}-Card.png"`,
         } : {},
