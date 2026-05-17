@@ -4,12 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { Navbar } from '@/components/shared/Navbar';
 import { PassportDashboard } from '@/components/product/passport/PassportDashboard';
 import { supabase } from '@/lib/utils/supabase';
-import { CrewStats, Flight } from '@/lib/types/passport';
+import { CrewStats, Flight, CrewProfile, CrewRank } from '@/lib/types/passport';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 export default function PassportPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [stats, setStats] = useState<CrewStats | null>(null);
   const [earnedAchievements, setEarnedAchievements] = useState<string[]>([]);
   const [recentFlights, setRecentFlights] = useState<Flight[]>([]);
@@ -89,6 +89,22 @@ export default function PassportPage() {
     updated_at: new Date().toISOString(),
   };
 
+  const mockProfile: CrewProfile = {
+    id: 'demo',
+    user_id: 'demo',
+    display_name: 'Crew Member',
+    rank: 'First Officer',
+    base_iata: 'KUL',
+    airline_code: 'MH',
+    handle: 'crew.demo',
+    aircraft_types: ['B737'],
+    avatar_url: null,
+    privacy_mode: 'public',
+    hire_date: null,
+    birthday: null,
+    created_at: new Date().toISOString()
+  };
+
   const mockFlights: Flight[] = [
     { id: '1', crew_id: 'demo', flight_date: '2026-05-15', flight_number: 'MH 004', origin_iata: 'KUL', destination_iata: 'LHR' } as Flight,
     { id: '2', crew_id: 'demo', flight_date: '2026-05-13', flight_number: 'MH 001', origin_iata: 'LHR', destination_iata: 'KUL' } as Flight,
@@ -104,6 +120,23 @@ export default function PassportPage() {
     );
   }
 
+  // Map AuthContext Profile to CrewProfile type expected by PassportDashboard
+  const displayProfile: CrewProfile = profile ? {
+    id: profile.id,
+    user_id: user?.id || profile.id,
+    display_name: profile.full_name || 'Crew Member',
+    rank: (profile.rank as CrewRank) || ('First Officer' as CrewRank),
+    base_iata: 'KUL',
+    airline_code: profile.airline?.substring(0, 2).toUpperCase() || 'MH',
+    handle: `crew.${profile.id.substring(0, 5)}`,
+    aircraft_types: ['B737'],
+    avatar_url: profile.avatar_url || null,
+    privacy_mode: 'public',
+    hire_date: null,
+    birthday: null,
+    created_at: profile.created_at || new Date().toISOString()
+  } : mockProfile;
+
   return (
     <main id="main-content">
       <Navbar />
@@ -111,6 +144,7 @@ export default function PassportPage() {
         stats={stats || mockStats} 
         earnedAchievements={stats ? earnedAchievements : mockAchievements}
         recentFlights={stats ? recentFlights : mockFlights}
+        crewProfile={displayProfile}
       />
     </main>
   );

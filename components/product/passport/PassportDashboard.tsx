@@ -18,6 +18,7 @@ interface DashboardProps {
   stats: CrewStats;
   earnedAchievements?: string[];
   recentFlights?: Flight[];
+  crewProfile?: CrewProfile;
 }
 
 interface StatCardProps {
@@ -42,12 +43,39 @@ const StatCard = ({ label, value, sub, icon: Icon }: StatCardProps) => (
   </div>
 );
 
-export const PassportDashboard = ({ stats, earnedAchievements = [], recentFlights = [] }: DashboardProps) => {
-  const { user } = useAuth();
+export const PassportDashboard = ({ stats, earnedAchievements = [], recentFlights = [], crewProfile: initialCrewProfile }: DashboardProps) => {
+  const { user, profile } = useAuth();
   const [isShareModalOpen, setIsShareModalOpen] = React.useState(false);
-  const [crewProfile, setCrewProfile] = React.useState<CrewProfile | null>(null);
+  const [crewProfile, setCrewProfile] = React.useState<CrewProfile | null>(initialCrewProfile || null);
   const cardRef = React.useRef<HTMLDivElement>(null);
   const earnedSet = new Set(earnedAchievements);
+  const hasInitializedProfile = React.useRef(false);
+
+  React.useEffect(() => {
+    if (initialCrewProfile && !hasInitializedProfile.current) {
+      setCrewProfile(initialCrewProfile);
+      hasInitializedProfile.current = true;
+    }
+  }, [initialCrewProfile]);
+
+  // Also sync with AuthContext profile for immediate updates
+  React.useEffect(() => {
+    if (profile) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCrewProfile(prev => {
+        // Only update if data actually changed to avoid cascading renders
+        if (prev?.display_name === profile.full_name && prev?.airline_code === profile.airline?.substring(0, 2).toUpperCase()) {
+          return prev;
+        }
+        return {
+          ...prev,
+          ...profile,
+          display_name: profile.full_name || prev?.display_name || 'Crew Member',
+          airline_code: profile.airline?.substring(0, 2).toUpperCase() || prev?.airline_code || 'MH',
+        } as CrewProfile;
+      });
+    }
+  }, [profile]);
 
   React.useEffect(() => {
     if (user) {
