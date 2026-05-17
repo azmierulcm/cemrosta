@@ -47,13 +47,24 @@ export async function GET(
     const targetMonthNorm = normalizeMonth(month);
 
     const monthFlights = (flights || []).filter(f => {
-      const d = new Date(f.flight_date);
-      const shortMonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-      const mNorm = shortMonths[d.getUTCMonth()];
-      return mNorm === targetMonthNorm && d.getUTCFullYear().toString() === year;
+      if (!f.flight_date) return false;
+      try {
+        const d = new Date(f.flight_date);
+        if (isNaN(d.getTime())) return false;
+        
+        const shortMonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        const mNorm = shortMonths[d.getUTCMonth()];
+        return mNorm === targetMonthNorm && d.getUTCFullYear().toString() === year;
+      } catch {
+        return false;
+      }
     });
 
     console.log(`Found ${monthFlights.length} flights for recap`);
+
+    if (monthFlights.length === 0) {
+      console.warn(`No flights found for ${userId} in ${month} ${year}`);
+    }
 
     // 3. Calculate Stats
     const sectors = monthFlights.filter(f => f.duty_type?.toLowerCase() === 'flight').length;
@@ -63,7 +74,7 @@ export async function GET(
 
     const displayName = profile.display_name || 'Crew Member';
     const data = {
-      month,
+      month: month.toUpperCase(),
       year,
       heroValue: hours.toString(),
       heroLabel: 'BLOCK HOURS',
@@ -96,7 +107,11 @@ export async function GET(
       }
     );
   } catch (err) {
-    console.error('OG Image Generation Error:', err);
-    return new Response(`Error generating image: ${err instanceof Error ? err.message : 'Unknown error'}`, { status: 500 });
+    console.error('CRITICAL: OG Image Generation Error:', err);
+    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: 'Recap generation failed', details: errorMsg }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
