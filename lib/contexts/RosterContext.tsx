@@ -32,7 +32,20 @@ const STORAGE_KEY = 'cemrosta-roster-storage';
 
 export function RosterProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [roster, setRosterState] = useState<RosterData | null>(null);
+  const [roster, setRosterState] = useState<RosterData | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          return parsed.state?.roster || null;
+        } catch (e) {
+          console.warn('Initial cache hydration failed', e);
+        }
+      }
+    }
+    return null;
+  });
   const [history, setHistory] = useState<{ month: string; year: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setErrorState] = useState<string | null>(null);
@@ -143,28 +156,13 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
   }, [processRoster]);
 
   useEffect(() => {
-    // 1. Initial hydration from cache for instant feel
-    if (!rosterRef.current) {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed.state?.roster) {
-            setRosterState(parsed.state.roster);
-          }
-        } catch (e) {
-          console.warn('Initial cache hydration failed', e);
-        }
-      }
-    }
-
-    // 2. Network sync
+    // Network sync
     if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchRoster(user.id);
+      // Defer to avoid cascading render warning
+      Promise.resolve().then(() => fetchRoster(user.id));
     } else if (user === null) {
       // Specifically handled null user (signed out)
-      setIsLoading(false);
+      Promise.resolve().then(() => setIsLoading(false));
     }
   }, [user, fetchRoster]);
 

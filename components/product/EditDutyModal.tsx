@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Trash2, Clock, MapPin, Plane, Loader2 } from 'lucide-react';
+import { X, Save, Trash2, Loader2 } from 'lucide-react';
 import { DutyEvent, DutyType } from '@/lib/types';
 
 interface EditDutyModalProps {

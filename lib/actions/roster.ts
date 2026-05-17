@@ -2,6 +2,7 @@
 
 import { getSupabaseServer } from '@/lib/utils/supabase';
 import { RosterData, DutyEvent, DutyType } from '@/lib/types';
+import { recomputeStats } from '@/lib/passport-stats';
 
 export async function fetchUserRoster(userId: string, month?: string, year?: string, includePrevious: boolean = false): Promise<{ roster: RosterData, history: { month: string, year: string }[] } | null> {
   const supabase = getSupabaseServer();
@@ -88,8 +89,7 @@ export async function fetchUserRoster(userId: string, month?: string, year?: str
     // Support for previous month if requested (Step 5)
     let prevMonthNorm = '';
     if (includePrevious) {
-      const prevDate = new Date(parseInt(finalYear), history.findIndex(h => h.month === finalMonth && h.year === finalYear) + 1, 0);
-      // Wait, simple way: find the one after target in history
+      // Simple way: find the one after target in history
       const targetIdx = history.findIndex(h => h.month === finalMonth && h.year === finalYear);
       if (targetIdx !== -1 && history[targetIdx + 1]) {
         prevMonthNorm = normalizeMonth(history[targetIdx + 1].month);
@@ -142,10 +142,10 @@ export async function fetchUserRoster(userId: string, month?: string, year?: str
 export async function updateDuty(dutyId: string, updates: Partial<DutyEvent>) {
   const supabase = getSupabaseServer();
   try {
-    // 1. Fetch the existing record to get the date if not provided
+    // 1. Fetch the existing record to get the date and crewId
     const { data: existing } = await supabase
       .from('flights')
-      .select('flight_date')
+      .select('flight_date, crew_id')
       .eq('id', dutyId)
       .single();
 
@@ -168,11 +168,15 @@ export async function updateDuty(dutyId: string, updates: Partial<DutyEvent>) {
         sta_utc: combineDateAndTime(dateStr, updates.sta || updates.signOff),
         aircraft_type: updates.aircraftType,
         duty_type: updates.type?.toLowerCase(),
-        description: updates.description // Make sure this is in your SQL
+        description: updates.description 
       })
       .eq('id', dutyId);
 
     if (error) throw error;
+
+    // 2. Recompute Stats
+    await recomputeStats(existing.crew_id);
+
     return { success: true };
   } catch (err) {
     console.error('Update Duty Error:', err);
@@ -183,12 +187,25 @@ export async function updateDuty(dutyId: string, updates: Partial<DutyEvent>) {
 export async function deleteDuty(dutyId: string) {
   const supabase = getSupabaseServer();
   try {
+    // 1. Fetch crew_id before deleting
+    const { data: flight } = await supabase
+      .from('flights')
+      .select('crew_id')
+      .eq('id', dutyId)
+      .single();
+
     const { error } = await supabase
       .from('flights')
       .delete()
       .eq('id', dutyId);
 
     if (error) throw error;
+
+    // 2. Recompute Stats if flight found
+    if (flight?.crew_id) {
+      await recomputeStats(flight.crew_id);
+    }
+
     return { success: true };
   } catch (err) {
     console.error('Delete Duty Error:', err);
@@ -208,44 +225,38 @@ export async function deleteMonthlyRoster(userId: string, month: string, year: s
 
     if (!profile) throw new Error('Profile not found');
 
-    // 2. Fetch all flights for this user to filter manually by month name
-    // (Filtering by month name is safer since we store ISO dates)
-    const { data: flights, error: fetchError } = await supabase
+    // 2. Define Date Range for the month
+    const monthsMap: Record<string, number> = {
+      'january': 0, 'february': 1, 'march': 2, 'april': 3, 'may': 4, 'june': 5,
+      'july': 6, 'august': 7, 'september': 8, 'october': 9, 'november': 10, 'december': 11
+    };
+    const monthIndex = monthsMap[month.toLowerCase()];
+    if (monthIndex === undefined) throw new Error(`Invalid month: ${month}`);
+
+    const startDate = new Date(Date.UTC(parseInt(year), monthIndex, 1)).toISOString();
+    const endDate = new Date(Date.UTC(parseInt(year), monthIndex + 1, 0, 23, 59, 59)).toISOString();
+
+    // 3. Delete flights within this range for this crew member
+    const { error: deleteError, count } = await supabase
       .from('flights')
-      .select('id, flight_date')
-      .eq('crew_id', profile.id);
-
-    if (fetchError) throw fetchError;
-
-    const normalizeMonth = (m: string) => m.toLowerCase().slice(0, 3);
-    const targetMonthNorm = normalizeMonth(month);
-
-    const idsToDelete = (flights || [])
-      .filter(f => {
-        const d = new Date(f.flight_date);
-        const m = d.toLocaleString('en-US', { month: 'short' });
-        return normalizeMonth(m) === targetMonthNorm && d.getFullYear().toString() === year;
-      })
-      .map(f => f.id);
-
-    if (idsToDelete.length === 0) return { success: true, count: 0 };
-
-    // 3. Delete those flights
-    const { error: deleteError } = await supabase
-      .from('flights')
-      .delete()
-      .in('id', idsToDelete);
+      .delete({ count: 'exact' })
+      .eq('crew_id', profile.id)
+      .gte('flight_date', startDate.split('T')[0])
+      .lte('flight_date', endDate.split('T')[0]);
 
     if (deleteError) throw deleteError;
 
-    return { success: true, count: idsToDelete.length };
+    // 4. Recompute Stats & Achievements immediately
+    await recomputeStats(profile.id);
+
+    return { success: true, count: count || 0 };
   } catch (err) {
     console.error('Delete Monthly Roster Error:', err);
     return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }
 }
 
-export async function updateUserProfile(userId: string, updates: any) {
+export async function updateUserProfile(userId: string, updates: Record<string, string | string[] | number | null>) {
   const supabase = getSupabaseServer();
   try {
     // 1. Update Base Profile

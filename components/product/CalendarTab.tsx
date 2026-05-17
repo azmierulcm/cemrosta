@@ -1,25 +1,30 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useRoster } from '@/lib/contexts/RosterContext';
-import { motion } from 'framer-motion';
 import { DutyEvent } from '@/lib/types';
 
 export const CalendarTab = () => {
   const { roster, switchMonth } = useRoster();
-  if (!roster) return null;
 
   // We want to ensure we have both current and previous month
-  React.useEffect(() => {
-    // Trigger a fetch with includePrevious if not already loaded
-    // This is a bit simplified, but ensures we hit the Step 5 requirement
-    switchMonth(roster.month, roster.year, true);
-  }, []); // Only on mount of this tab
+  useEffect(() => {
+    if (roster) {
+      // Trigger a fetch with includePrevious if not already loaded
+      // This is a bit simplified, but ensures we hit the Step 5 requirement
+      switchMonth(roster.month, roster.year, true);
+    }
+  }, [roster?.month, roster?.year, roster, switchMonth]); // Run when month/year changes
 
-  const eventsByDate = roster.events.reduce((acc, event) => {
-    acc[event.date] = event;
-    return acc;
-  }, {} as Record<string, DutyEvent>);
+  const eventsByDate = useMemo(() => {
+    if (!roster) return {} as Record<string, DutyEvent>;
+    return roster.events.reduce((acc, event) => {
+      acc[event.date] = event;
+      return acc;
+    }, {} as Record<string, DutyEvent>);
+  }, [roster]);
+
+  if (!roster) return null;
 
   // Logic to render two months
   const renderMonth = (mName: string, yStr: string) => {
@@ -76,7 +81,6 @@ export const CalendarTab = () => {
   };
 
   // Calculate previous month name
-  const date = new Date(parseInt(roster.year), 0); // placeholder
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const currentIdx = months.indexOf(roster.month);
   const prevIdx = (currentIdx - 1 + 12) % 12;

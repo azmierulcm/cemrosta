@@ -15,12 +15,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import { AuthModal } from '@/components/shared/AuthModal';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { supabase } from '@/lib/utils/supabase';
 import { Upload, Loader2 } from 'lucide-react';
 
 export default function HomeClient() {
   const { roster, isLoading: rosterLoading } = useRoster();
-  const { user, setUser, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [showStickyCTA, setShowStickyCTA] = useState(false);
 
   // Monitor scroll for sticky CTA

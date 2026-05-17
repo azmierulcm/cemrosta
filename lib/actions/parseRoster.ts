@@ -3,10 +3,25 @@
 import { getDocumentProxy, extractText } from 'unpdf';
 import { parseRosterText } from '@/lib/parser';
 import { RosterData, DutyEvent, DutyType } from '@/lib/types';
+import { CrewProfile, CrewRank } from '@/lib/types/passport';
 import { getSupabaseServer } from '@/lib/utils/supabase';
 import { generateICS } from '@/lib/utils/calendar';
 import { recomputeStats } from '@/lib/passport-stats';
 import { calculateKilometers, calculateBlockMinutes } from '@/lib/utils/geo/haversine';
+
+interface PyDutyEvent {
+  id: string;
+  type: string;
+  date: string;
+  flight_number?: string;
+  dep_port?: string;
+  arr_port?: string;
+  std?: string;
+  sta?: string;
+  sign_on?: string;
+  sign_off?: string;
+  description?: string;
+}
 
 /**
  * Step 1: Just parse the PDF and return data to the client for preview.
@@ -40,19 +55,7 @@ export async function parseRoster(formData: FormData): Promise<RosterData> {
         if (response.ok) {
           const pyData = await response.json();
           rosterData = {
-            events: pyData.events.map((e: {
-              id: string;
-              type: string;
-              date: string;
-              flight_number?: string;
-              dep_port?: string;
-              arr_port?: string;
-              std?: string;
-              sta?: string;
-              sign_on?: string;
-              sign_off?: string;
-              description?: string;
-            }) => ({
+            events: pyData.events.map((e: PyDutyEvent) => ({
               id: e.id,
               type: e.type as DutyType,
               date: e.date,
@@ -97,7 +100,7 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
     // 1. Skip profiles table for now due to schema cache issues
     
     // 2. Ensure Crew Profile exists (Refactored to satisfy handle not-null constraint)
-    let { data: existingProfile } = await supabase
+    const { data: existingProfile } = await supabase
       .from('crew_profiles')
       .select('id, handle')
       .eq('user_id', userId)
@@ -106,13 +109,12 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
     let crewProfileId = userId;
     
     // Construct base payload
-    const profilePayload: any = {
+    const profilePayload: Partial<CrewProfile> = {
       user_id: userId,
       display_name: rosterData.crewName || 'Crew Member',
-      rank: 'Crew', 
+      rank: 'Crew' as CrewRank, 
       base_iata: 'KUL',
       airline_code: 'MH',
-      updated_at: new Date().toISOString()
     };
 
     // If it doesn't exist, we MUST include a handle and the Primary ID
@@ -130,7 +132,7 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
       .upsert({
         id: crewProfileId,
         ...profilePayload
-      }, { onConflict: 'id' })
+      } as unknown as CrewProfile, { onConflict: 'id' })
       .select('id')
       .single();
 
@@ -173,7 +175,20 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
       }
       
       // 3b. Construct and Deduplicate Duties
-      const eventsMap = new Map<string, any>();
+      interface FlightRecord {
+        crew_id: string;
+        flight_date: string;
+        flight_number: string;
+        origin_iata: string;
+        destination_iata: string;
+        std_utc: string;
+        sta_utc: string;
+        block_minutes: number;
+        distance_km: number;
+        aircraft_type: string;
+        duty_type: string;
+      }
+      const eventsMap = new Map<string, FlightRecord>();
       
       rosterData.events.forEach(e => {
         const combineDateAndTime = (dateStr: string, timeStr?: string) => {
@@ -207,37 +222,48 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
       if (eventsToInsert.length > 0) {
         const { error: flightError } = await supabase
           .from('flights')
-          .upsert(eventsToInsert, { onConflict: 'crew_id, flight_date, flight_number' });
+          .upsert(eventsToInsert, { 
+            onConflict: 'crew_id, flight_date, flight_number',
+            ignoreDuplicates: false // We want to overwrite with latest data from PDF
+          });
         
         if (flightError) {
           console.error('Supabase Flights Upsert Error:', flightError);
+          // Map common Postgres/Supabase errors to user-friendly messages
           if (flightError.code === '23503') {
-            if (flightError.message.includes('flights_crew_id_fkey')) {
-               throw new Error(`Profile Mismatch: Your crew profile (ID: ${crewProfile.id}) was not found in the flight system. Please try running the SQL setup again.`);
-            }
-            throw new Error(`Save failed: Some airport codes in your roster are not yet in our database. (${flightError.message})`);
+            throw new Error('Save failed: Database integrity error. Please contact flight deck support.');
           }
-          throw new Error(`Flight Sync Failed: ${flightError.message} (${flightError.code})`);
+          if (flightError.code === '42501') {
+            throw new Error('Permission denied: You do not have permission to save these records.');
+          }
+          throw new Error(`Flight Sync Failed: ${flightError.message}`);
         }
       }
 
       // 3c. Recompute Stats & Achievements
-      await recomputeStats(crewProfile.id);
+      try {
+        await recomputeStats(crewProfile.id);
+      } catch (statsErr) {
+        console.error('Non-critical: Stats recompute failed after save:', statsErr);
+        // We don't throw here so the user still sees their missions saved
+      }
 
-      // 4. Generate and Store ICS File
-      const icsContent = generateICS(rosterData);
-      if (icsContent) {
-        const filename = `${rosterData.year}-${rosterData.month}.ics`;
-        const icsPath = `${userId}/rosters/${filename}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('roster-files')
-          .upload(icsPath, icsContent, {
-            contentType: 'text/calendar',
-            upsert: true
-          });
-
-        if (uploadError) console.error('ICS Upload Error:', uploadError.message);
+      // 4. Generate and Store ICS File (Optional/Non-critical)
+      try {
+        const icsContent = generateICS(rosterData);
+        if (icsContent) {
+          const filename = `${rosterData.year}-${rosterData.month}.ics`;
+          const icsPath = `${userId}/rosters/${filename}`;
+          
+          await supabase.storage
+            .from('roster-files')
+            .upload(icsPath, icsContent, {
+              contentType: 'text/calendar',
+              upsert: true
+            });
+        }
+      } catch (icsErr) {
+        console.error('Non-critical: ICS storage failed:', icsErr);
       }
     }
 

@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       downloadStoriesUrl: `${storiesUrl}?download=1`,
       downloadCardUrl: `${cardUrl}?download=1`
     });
-  } catch (_err) {
+  } catch {
     return NextResponse.json({ error: 'Failed to generate recap links' }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { CardTemplate } from '@/lib/recap/templates';
 import { getTopSuperlative } from '@/lib/recap/superlatives';
 import { getSupabaseServer } from '@/lib/utils/supabase';
+import { DutyEvent } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
@@ -88,7 +89,7 @@ export async function GET(
       arrPort: f.destination_iata,
     }));
 
-    const superlative = getTopSuperlative(events as any);
+    const superlative = getTopSuperlative(events as DutyEvent[]);
 
     return new ImageResponse(
       <CardTemplate data={data} superlative={superlative} />,

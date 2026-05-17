@@ -14,10 +14,20 @@ export const CrewCard = ({ profile, stats }: CrewCardProps) => {
         <div className="w-full h-full" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #D4AF37, #D4AF37 1px, transparent 1px, transparent 10px)' }} />
       </div>
 
-      {/* Header with Rank Insignia Placeholder */}
+      {/* Header with Rank Insignia */}
       <div className="flex justify-between items-start mb-8 relative z-10">
         <div className="w-12 h-12 rounded-xl bg-passport-gold/10 border border-passport-gold/20 flex items-center justify-center">
-          <span className="text-passport-gold font-black text-xl">4</span> {/* Stripes for Captain */}
+          <span className="text-passport-gold font-black text-xl">
+            {(() => {
+              switch (profile.rank) {
+                case 'Captain': return '4';
+                case 'First Officer': return '3';
+                case 'Second Officer': return '2';
+                case 'Cadet': return '1';
+                default: return 'C'; // Cabin Crew
+              }
+            })()}
+          </span>
         </div>
         <div className="text-right">
           <p className="text-[10px] font-black text-passport-gold tracking-widest uppercase">Verified Crew</p>

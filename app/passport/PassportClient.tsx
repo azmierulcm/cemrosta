@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Navbar } from '@/components/shared/Navbar';
 import { PassportDashboard } from '@/components/product/passport/PassportDashboard';
 import { supabase } from '@/lib/utils/supabase';
-import { CrewStats } from '@/lib/types/passport';
+import { CrewStats, Flight } from '@/lib/types/passport';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
@@ -12,6 +12,7 @@ export default function PassportPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<CrewStats | null>(null);
   const [earnedAchievements, setEarnedAchievements] = useState<string[]>([]);
+  const [recentFlights, setRecentFlights] = useState<Flight[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -38,6 +39,18 @@ export default function PassportPage() {
 
       if (achievementsData) {
         setEarnedAchievements(achievementsData.map(a => a.key));
+      }
+
+      // 3. Fetch Recent Flights
+      const { data: flightsData } = await supabase
+        .from('flights')
+        .select('*')
+        .eq('crew_id', user.id)
+        .order('flight_date', { ascending: false })
+        .limit(4);
+
+      if (flightsData) {
+        setRecentFlights(flightsData as Flight[]);
       }
 
       setIsLoading(false);
@@ -76,6 +89,13 @@ export default function PassportPage() {
     updated_at: new Date().toISOString(),
   };
 
+  const mockFlights: Flight[] = [
+    { id: '1', crew_id: 'demo', flight_date: '2026-05-15', flight_number: 'MH 004', origin_iata: 'KUL', destination_iata: 'LHR' } as Flight,
+    { id: '2', crew_id: 'demo', flight_date: '2026-05-13', flight_number: 'MH 001', origin_iata: 'LHR', destination_iata: 'KUL' } as Flight,
+    { id: '3', crew_id: 'demo', flight_date: '2026-05-10', flight_number: 'MH 123', origin_iata: 'KUL', destination_iata: 'SIN' } as Flight,
+    { id: '4', crew_id: 'demo', flight_date: '2026-05-10', flight_number: 'MH 124', origin_iata: 'SIN', destination_iata: 'KUL' } as Flight,
+  ];
+
   if (isLoading) {
     return (
       <div className="bg-passport-bg min-h-screen flex items-center justify-center">
@@ -90,6 +110,7 @@ export default function PassportPage() {
       <PassportDashboard 
         stats={stats || mockStats} 
         earnedAchievements={stats ? earnedAchievements : mockAchievements}
+        recentFlights={stats ? recentFlights : mockFlights}
       />
     </main>
   );

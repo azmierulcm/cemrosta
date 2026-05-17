@@ -11,8 +11,8 @@ import { RosterData } from '@/lib/types';
 
 export const FileUploader = () => {
   const shouldReduceMotion = useReducedMotion();
-  const { history, isLoading, setLoading, error, setError, setRoster, syncToSupabase } = useRoster();
-  const { user } = useAuth();
+  const { isLoading, setLoading, error, setError, setRoster, syncToSupabase } = useRoster();
+  useAuth();
   
   const [previewData, setPreviewData] = React.useState<RosterData | null>(null);
   const [isSyncing, setIsSyncing] = React.useState(false);
@@ -43,17 +43,8 @@ export const FileUploader = () => {
   const handleConfirmSync = async () => {
     if (!previewData) return;
 
-    // Check for duplicate month in history
-    const isDuplicate = history.some(
-      (h) => h.month.toLowerCase() === previewData.month.toLowerCase() && h.year === previewData.year
-    );
-
-    if (isDuplicate) {
-      setError(`A roster for ${previewData.month} ${previewData.year} already exists in your history. Please delete the existing records first if you wish to re-upload.`);
-      return;
-    }
-
     setIsSyncing(true);
+    setError(null);
     
     const result = await syncToSupabase(previewData);
     if (result.success) {

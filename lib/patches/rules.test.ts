@@ -1,16 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { calculateVisits, getRarityTier } from './rules';
+import { DutyEvent } from '../types';
 
 describe('Patch Earning Rules', () => {
-  const mockEvents = [
-    { date: '2025-11-01', type: 'FLIGHT', depPort: 'KUL', arrPort: 'LHR' },
-    { date: '2025-11-03', type: 'FLIGHT', depPort: 'LHR', arrPort: 'KUL' },
-    { date: '2025-11-05', type: 'FLIGHT', depPort: 'KUL', arrPort: 'SIN' },
-    { date: '2025-11-05', type: 'FLIGHT', depPort: 'SIN', arrPort: 'KUL' }, // Turnaround
-    { date: '2025-11-07', type: 'FLIGHT', depPort: 'KUL', arrPort: 'SYD' },
-    { date: '2025-11-10', type: 'FLIGHT', depPort: 'SYD', arrPort: 'MEL' }, // Multi-leg outstation
-    { date: '2025-11-12', type: 'FLIGHT', depPort: 'MEL', arrPort: 'KUL' },
+  const mockEvents: DutyEvent[] = [
+    { id: '1', date: '2025-11-01', type: 'FLIGHT', depPort: 'KUL', arrPort: 'LHR' },
+    { id: '2', date: '2025-11-03', type: 'FLIGHT', depPort: 'LHR', arrPort: 'KUL' },
+    { id: '3', date: '2025-11-05', type: 'FLIGHT', depPort: 'KUL', arrPort: 'SIN' },
+    { id: '4', date: '2025-11-05', type: 'FLIGHT', depPort: 'SIN', arrPort: 'KUL' }, // Turnaround
+    { id: '5', date: '2025-11-07', type: 'FLIGHT', depPort: 'KUL', arrPort: 'SYD' },
+    { id: '6', date: '2025-11-10', type: 'FLIGHT', depPort: 'SYD', arrPort: 'MEL' }, // Multi-leg outstation
+    { id: '7', date: '2025-11-12', type: 'FLIGHT', depPort: 'MEL', arrPort: 'KUL' },
   ];
+
 
   it('calculates outstation visits based on distinct overnights', () => {
     // LHR: Landed 1st, Departed 3rd = 1 visit (overnight)

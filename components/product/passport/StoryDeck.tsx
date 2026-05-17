@@ -1,35 +1,46 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, Pause, Play } from 'lucide-react';
 import Link from 'next/link';
+import { CrewStats, CrewProfile } from '@/lib/types/passport';
 
-const SLIDES = [
-  { id: 1, type: 'text', title: "Your 2026 in the air.", sub: "Welcome back, Muhammad Azmierul." },
-  { id: 2, type: 'stat', label: "Total Distance", value: "142,500", unit: "KM" },
-  { id: 3, type: 'quote', title: "That's 3.5 times around the earth.", sub: "A massive year of operations." },
-  { id: 4, type: 'stat', label: "Mission Hubs", value: "24", unit: "Cities" },
-  { id: 5, type: 'highlight', title: "Most Flown Route", sub: "Kuala Lumpur to London", meta: "14 Times" },
-  { id: 6, type: 'stat', label: "Sunrises Witnessed", value: "45", unit: "from FL370" },
-  { id: 7, type: 'stat', label: "Time in the Air", value: "932", unit: "Block Hours" },
-  { id: 8, type: 'stat', label: "Mission Colleagues", value: "142", unit: "Crew Members" },
-  { id: 9, type: 'highlight', title: "Longest Sector", sub: "LHR to KUL", meta: "13h 40m" },
-  { id: 10, type: 'achievement', title: "Rarest Moment", sub: "Equator Bound", meta: "Top 12% of Crew" },
-  { id: 11, type: 'text', title: "Ready for next year?", sub: "See you in 2027, First Officer Azmierul." },
-];
+interface StoryDeckProps {
+  stats: CrewStats;
+  crewProfile: CrewProfile;
+}
 
-export const StoryDeck = () => {
+export const StoryDeck = ({ stats, crewProfile }: StoryDeckProps) => {
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  const SLIDES = useMemo(() => {
+    const year = new Date().getFullYear();
+    const earthCircumference = 40075;
+    const timesAroundEarth = (stats.total_km / earthCircumference).toFixed(1);
+
+    return [
+      { id: 1, type: 'text', title: `Your ${year} in the air.`, sub: `Welcome back, ${crewProfile.display_name}.` },
+      { id: 2, type: 'stat', label: "Total Distance", value: stats.total_km.toLocaleString(), unit: "KM" },
+      { id: 3, type: 'quote', title: `That's ${timesAroundEarth} times around the earth.`, sub: "A massive year of operations." },
+      { id: 4, type: 'stat', label: "Mission Hubs", value: stats.unique_destinations, unit: "Cities" },
+      { id: 5, type: 'highlight', title: "Most Flown Route", sub: stats.top_route_pair || "Connecting the World", meta: `${stats.top_route_count} Times` },
+      { id: 6, type: 'stat', label: "Sunrises Witnessed", value: stats.sunrises_witnessed, unit: "from FL370" },
+      { id: 7, type: 'stat', label: "Time in the Air", value: Math.floor(stats.total_block_minutes / 60), unit: "Block Hours" },
+      { id: 8, type: 'stat', label: "Mission Colleagues", value: stats.unique_crew_flown_with, unit: "Crew Members" },
+      { id: 10, type: 'achievement', title: "Rarest Moment", sub: stats.equator_crossings > 0 ? "Equator Bound" : "The Explorer", meta: stats.equator_crossings > 0 ? "Crossed the center line" : "Mapping new horizons" },
+      { id: 11, type: 'text', title: "Ready for next year?", sub: `See you in ${year + 1}, ${crewProfile.rank} ${crewProfile.display_name.split(' ')[0]}.` },
+    ];
+  }, [stats, crewProfile]);
 
   const next = useCallback(() => {
     if (current < SLIDES.length - 1) {
       setCurrent(prev => prev + 1);
       setProgress(0);
     }
-  }, [current]);
+  }, [current, SLIDES.length]);
 
   const prev = useCallback(() => {
     if (current > 0) {

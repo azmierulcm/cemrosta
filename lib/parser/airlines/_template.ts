@@ -8,7 +8,7 @@ import { ParsedRoster, ParsedDuty } from '../types';
  * 3. Add tests in tests/parser/airline-name.test.ts
  */
 
-export function parseAirlineName(_text: string): ParsedRoster {
+export function parseAirlineName(): ParsedRoster {
   const duties: ParsedDuty[] = [];
   
   // Implementation goes here

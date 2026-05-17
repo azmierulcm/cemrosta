@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Plane, Globe, Award, Calendar, ChevronRight, Play } from 'lucide-react';
-import { CrewStats } from '@/lib/types/passport';
+import { CrewStats, Flight } from '@/lib/types/passport';
 import { ShareModal } from './ShareModal';
 import { AchievementBadge } from './AchievementBadge';
 import { ACHIEVEMENT_CATALOG } from '@/lib/achievements/definitions';
@@ -17,6 +17,7 @@ import { toPng } from 'html-to-image';
 interface DashboardProps {
   stats: CrewStats;
   earnedAchievements?: string[];
+  recentFlights?: Flight[];
 }
 
 interface StatCardProps {
@@ -41,7 +42,7 @@ const StatCard = ({ label, value, sub, icon: Icon }: StatCardProps) => (
   </div>
 );
 
-export const PassportDashboard = ({ stats, earnedAchievements = [] }: DashboardProps) => {
+export const PassportDashboard = ({ stats, earnedAchievements = [], recentFlights = [] }: DashboardProps) => {
   const { user } = useAuth();
   const [isShareModalOpen, setIsShareModalOpen] = React.useState(false);
   const [crewProfile, setCrewProfile] = React.useState<CrewProfile | null>(null);
@@ -156,7 +157,7 @@ export const PassportDashboard = ({ stats, earnedAchievements = [] }: DashboardP
             <div className="bg-white rounded-[3.5rem] p-12 md:p-16 border border-border flex flex-col md:flex-row items-center gap-16 mt-32 shadow-2xl shadow-black/5 relative overflow-hidden group">
                <div className="absolute top-0 right-0 w-64 h-64 bg-accent/3 blur-[80px] -mr-32 -mt-32 rounded-full" />
                <div className="scale-90 md:scale-110 origin-center shrink-0 relative z-10" ref={cardRef}>
-                  <CrewCard profile={crewProfile || {} as any} stats={stats} />
+                  <CrewCard profile={crewProfile || {} as CrewProfile} stats={stats} />
                </div>
                <div className="flex-1 text-center md:text-left relative z-10">
                   <h3 className="text-4xl font-black mb-6 tracking-tighter text-text uppercase italic">Your Digital Asset.</h3>
@@ -190,18 +191,24 @@ export const PassportDashboard = ({ stats, earnedAchievements = [] }: DashboardP
                 {"// RECENT MISSIONS"}
               </h3>
               <div className="space-y-4">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="flex items-center justify-between p-8 bg-white rounded-[2rem] border border-border hover:border-accent/40 transition-all cursor-pointer group shadow-sm hover:shadow-xl hover:shadow-black/5">
-                    <div className="flex items-center gap-8">
-                      <div className="font-mono text-[10px] font-black text-text-subtle bg-surface-2 px-3 py-1 rounded-full">MH 004</div>
-                      <div className="flex items-center gap-4">
-                        <span className="font-black text-base tracking-tighter text-text uppercase font-mono">KUL</span>
-                        <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                        <span className="font-black text-base tracking-tighter text-text uppercase font-mono">LHR</span>
+                {recentFlights.length > 0 ? (
+                  recentFlights.map((flight) => (
+                    <div key={flight.id} className="flex items-center justify-between p-8 bg-white rounded-[2rem] border border-border hover:border-accent/40 transition-all cursor-pointer group shadow-sm hover:shadow-xl hover:shadow-black/5">
+                      <div className="flex items-center gap-8">
+                        <div className="font-mono text-[10px] font-black text-text-subtle bg-surface-2 px-3 py-1 rounded-full">{flight.flight_number}</div>
+                        <div className="flex items-center gap-4">
+                          <span className="font-black text-base tracking-tighter text-text uppercase font-mono">{flight.origin_iata}</span>
+                          <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                          <span className="font-black text-base tracking-tighter text-text uppercase font-mono">{flight.destination_iata}</span>
+                        </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="p-8 bg-white rounded-[2rem] border border-border border-dashed text-center">
+                    <p className="text-text-muted text-sm font-bold tracking-tight italic">No missions found.</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
@@ -210,22 +217,38 @@ export const PassportDashboard = ({ stats, earnedAchievements = [] }: DashboardP
                <h3 className="text-[10px] font-black text-text-subtle uppercase tracking-[0.5em] mb-12 border-b border-border pb-8 font-mono">
                 {"// ELITE MILESTONE"}
               </h3>
-              <div className="bg-white p-10 rounded-[3rem] border border-border relative overflow-hidden group shadow-2xl shadow-black/5 hover:border-accent/10 transition-all">
-                  <div className="absolute top-0 left-0 w-full h-2 bg-accent/20" />
-                  <Award className="absolute -top-10 -right-10 w-48 h-48 text-accent/3 group-hover:scale-110 transition-transform duration-700" />
-                  <div className="relative z-10">
-                     <div className="w-16 h-16 rounded-2xl bg-accent/5 border border-accent/10 flex items-center justify-center mb-10 shadow-sm">
-                        <Award className="text-accent" size={32} />
-                     </div>
-                     <h4 className="text-3xl font-black mb-4 tracking-tighter text-text">Equator Bound</h4>
-                     <p className="text-text-muted text-lg font-bold leading-snug tracking-tight mb-12">
-                        Earned for your first crossing of the earth&apos;s center line. A true navigator&apos;s landmark.
-                     </p>
-                     <div className="bg-surface-2 px-6 py-3 rounded-full border border-border inline-block text-[10px] font-black text-accent uppercase tracking-[0.3em] font-mono shadow-sm">
-                        RARE BADGE
-                     </div>
+              {(() => {
+                const earnedCatalog = ACHIEVEMENT_CATALOG.filter(a => earnedSet.has(a.key));
+                const rarest = earnedCatalog.sort((a, b) => {
+                  const tiers = { 'mythic': 0, 'legendary': 1, 'epic': 2, 'rare': 3, 'uncommon': 4, 'common': 5 };
+                  return (tiers[a.tier as keyof typeof tiers] || 10) - (tiers[b.tier as keyof typeof tiers] || 10);
+                })[0];
+
+                const highlight = rarest || {
+                  name: 'Equator Bound',
+                  tier: 'rare',
+                  description: 'Earned for your first crossing of the earth\'s center line. A true navigator\'s landmark.',
+                };
+
+                return (
+                  <div className="bg-white p-10 rounded-[3rem] border border-border relative overflow-hidden group shadow-2xl shadow-black/5 hover:border-accent/10 transition-all">
+                      <div className="absolute top-0 left-0 w-full h-2 bg-accent/20" />
+                      <Award className="absolute -top-10 -right-10 w-48 h-48 text-accent/3 group-hover:scale-110 transition-transform duration-700" />
+                      <div className="relative z-10">
+                         <div className="w-16 h-16 rounded-2xl bg-accent/5 border border-accent/10 flex items-center justify-center mb-10 shadow-sm">
+                            <Award className="text-accent" size={32} />
+                         </div>
+                         <h4 className="text-3xl font-black mb-4 tracking-tighter text-text uppercase italic">{highlight.name}</h4>
+                         <p className="text-text-muted text-lg font-bold leading-snug tracking-tight mb-12">
+                            {highlight.description}
+                         </p>
+                         <div className="bg-surface-2 px-6 py-3 rounded-full border border-border inline-block text-[10px] font-black text-accent uppercase tracking-[0.3em] font-mono shadow-sm">
+                            {highlight.tier.toUpperCase()} BADGE
+                         </div>
+                      </div>
                   </div>
-              </div>
+                );
+              })()}
             </div>
 
             {/* Final Flight / Retirement CTA */}
