@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, Camera, Trash2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/lib/utils/supabase';
-import { useAuth } from '@/lib/contexts/AuthContext';
+import { useAuth, Profile } from '@/lib/contexts/AuthContext';
 import { updateUserProfile } from '@/lib/actions/roster';
 
 export const EditProfileModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
@@ -89,9 +89,9 @@ export const EditProfileModal = ({ isOpen, onClose }: { isOpen: boolean, onClose
 
       // 4. Update Global State
       setProfile({
-        id: user.id,
+        ...profile, // Keep existing fields
         ...updateData
-      });
+      } as Profile);
 
       setStatus({ type: 'success', text: 'Profile saved! Refreshing...' });
       

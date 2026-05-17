@@ -259,12 +259,16 @@ export async function deleteMonthlyRoster(userId: string, month: string, year: s
 export async function updateUserProfile(userId: string, updates: Record<string, string | string[] | number | null>) {
   const supabase = getSupabaseServer();
   try {
-    // 1. Update Base Profile
+    // 1. Update Base Profile (the 'profiles' table)
     const { error: profileError } = await supabase
       .from('profiles')
       .upsert({
         id: userId,
-        ...updates,
+        full_name: updates.full_name,
+        rank: updates.rank,
+        airline: updates.airline,
+        bio: updates.bio,
+        gallery_urls: updates.gallery_urls,
         updated_at: new Date().toISOString()
       }, { onConflict: 'id' });
 
@@ -273,22 +277,25 @@ export async function updateUserProfile(userId: string, updates: Record<string, 
       throw profileError;
     }
 
-    // 2. Sync display_name and handle to Crew Profile if full_name is provided
-    if (updates.full_name) {
-      // Fetch existing crew profile to get current state
-      const { data: existing } = await supabase
-        .from('crew_profiles')
-        .select('id, handle')
-        .eq('user_id', userId)
-        .maybeSingle();
+    // 2. Sync to Crew Profile (the 'crew_profiles' table)
+    // We fetch it first to get the current handle/id if it exists
+    const { data: existingCrew } = await supabase
+      .from('crew_profiles')
+      .select('id, handle')
+      .eq('user_id', userId)
+      .maybeSingle();
 
+    // Only update crew_profiles if critical identity fields changed
+    if (updates.full_name || updates.rank || updates.airline) {
       const { error: crewError } = await supabase
         .from('crew_profiles')
         .upsert({
-          id: existing?.id || userId,
+          id: existingCrew?.id || userId,
           user_id: userId,
-          display_name: updates.full_name,
-          handle: existing?.handle || `crew.${userId.slice(0, 5)}.${Math.floor(Math.random() * 1000)}`,
+          display_name: (updates.full_name as string) || undefined,
+          rank: (updates.rank as string) || undefined,
+          airline_code: (updates.airline as string) || 'MH',
+          handle: existingCrew?.handle || `crew.${userId.slice(0, 5)}.${Math.floor(Math.random() * 1000)}`,
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' });
 

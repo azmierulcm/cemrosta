@@ -4,15 +4,15 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/utils/supabase';
 
-interface Profile {
+export interface Profile {
   id: string;
   full_name?: string;
   rank?: string;
   airline?: string;
-  fleet?: string;
   bio?: string;
   avatar_url?: string;
   gallery_urls?: string[];
+  created_at?: string;
 }
 
 interface AuthContextType {

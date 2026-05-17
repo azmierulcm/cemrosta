@@ -27,7 +27,7 @@ export default function ProfileClient() {
     name: profile?.full_name || roster.crewName || 'Crew Member',
     role: profile?.rank || 'Crew Member',
     homeBase: 'KUL',
-    aircraftType: profile?.fleet || 'B737',
+    aircraftType: profile?.airline || 'B737',
     lifetimeStats: {
       sectors: roster.stats?.totalSectors || 0,
       blockMinutes: roster.events.reduce((acc) => {
