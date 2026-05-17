@@ -48,18 +48,20 @@ export async function GET(
 
     const monthFlights = (flights || []).filter(f => {
       const d = new Date(f.flight_date);
-      const m = d.toLocaleString('en-US', { month: 'short' });
-      return normalizeMonth(m) === targetMonthNorm && d.getFullYear().toString() === year;
+      const shortMonths = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      const mNorm = shortMonths[d.getUTCMonth()];
+      return mNorm === targetMonthNorm && d.getUTCFullYear().toString() === year;
     });
 
     console.log(`Found ${monthFlights.length} flights for recap`);
 
     // 3. Calculate Stats
-    const sectors = monthFlights.filter(f => f.duty_type === 'flight').length;
+    const sectors = monthFlights.filter(f => f.duty_type?.toLowerCase() === 'flight').length;
     const totalKm = monthFlights.reduce((acc, f) => acc + Number(f.distance_km || 0), 0);
     const totalMinutes = monthFlights.reduce((acc, f) => acc + Number(f.block_minutes || 0), 0);
     const hours = Math.floor(totalMinutes / 60);
 
+    const displayName = profile.display_name || 'Crew Member';
     const data = {
       month,
       year,
@@ -68,7 +70,7 @@ export async function GET(
       sectors,
       hours: hours.toString(),
       km: totalKm > 1000 ? `${(totalKm / 1000).toFixed(1)}k` : totalKm.toString(),
-      handle: profile.handle ? `@${profile.handle}` : `@${profile.display_name.toLowerCase().replace(/\s+/g, '.')}`
+      handle: profile.handle ? `@${profile.handle}` : `@${displayName.toLowerCase().replace(/\s+/g, '.')}`
     };
 
     // 4. Map to DutyEvent for Superlative engine

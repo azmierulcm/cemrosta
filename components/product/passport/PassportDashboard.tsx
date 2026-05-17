@@ -83,7 +83,7 @@ export const PassportDashboard = ({ stats, earnedAchievements = [], recentFlight
         .from('crew_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
         .then(({ data }) => {
           if (data) setCrewProfile(data as CrewProfile);
         });

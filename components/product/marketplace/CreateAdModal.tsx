@@ -57,7 +57,7 @@ export const CreateAdModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: (
 
     try {
       // 0. Check Listing Limit (client-side safety, RLS/Trigger should handle server-side)
-      const { data: profile } = await supabase.from('profiles').select('active_listings_count').eq('id', user.id).single();
+      const { data: profile } = await supabase.from('profiles').select('active_listings_count').eq('id', user.id).maybeSingle();
       if (profile && profile.active_listings_count >= 5) {
         throw new Error('Maximum limit of 5 active listings reached.');
       }
