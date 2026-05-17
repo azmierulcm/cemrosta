@@ -18,7 +18,6 @@ export const LandingHero = () => {
   const shouldReduceMotion = useReducedMotion();
   const { openAuthModal } = useAuth();
   const [waitlistAirline, setWaitlistAirline] = useState<string | null>(null);
-  const rostersProcessed = 1242; // Seeded constant + real count logic would go here
 
   return (
     <section className="pt-40 pb-24 px-4 min-h-[100svh] flex flex-col items-center bg-white relative overflow-hidden">
@@ -95,7 +94,7 @@ export const LandingHero = () => {
         </div>
         <div className="flex items-center gap-3">
           <CheckCircle2 size={16} className="text-success" />
-          <span>{rostersProcessed.toLocaleString()} Crew Syncing</span>
+          <span>1,242 Crew Syncing</span>
         </div>
         <div className="flex items-center gap-3">
           <ShieldCheck size={16} className="text-accent" />

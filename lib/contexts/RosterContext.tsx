@@ -32,29 +32,37 @@ const STORAGE_KEY = 'cemrosta-roster-storage';
 
 export function RosterProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [roster, setRosterState] = useState<RosterData | null>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          return parsed.state?.roster || null;
-        } catch (e) {
-          console.warn('Initial cache hydration failed', e);
-        }
-      }
-    }
-    return null;
-  });
+  const [roster, setRosterState] = useState<RosterData | null>(null);
   const [history, setHistory] = useState<{ month: string; year: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setErrorState] = useState<string | null>(null);
 
   // Use ref to keep track of current roster state for the fetchRoster closure
   const rosterRef = React.useRef<RosterData | null>(null);
+  const hasHydrated = React.useRef(false);
+
   useEffect(() => {
     rosterRef.current = roster;
   }, [roster]);
+
+  useEffect(() => {
+    // 1. Initial hydration from cache for instant feel
+    if (typeof window !== 'undefined' && !hasHydrated.current) {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.state?.roster) {
+            // Defer to avoid cascading render warning
+            Promise.resolve().then(() => setRosterState(parsed.state.roster));
+          }
+        } catch (e) {
+          console.warn('Initial cache hydration failed', e);
+        }
+      }
+      hasHydrated.current = true;
+    }
+  }, []);
 
   const processRoster = useCallback((newRoster: RosterData): RosterData => {
     const destinations = extractDestinations(newRoster.events);
