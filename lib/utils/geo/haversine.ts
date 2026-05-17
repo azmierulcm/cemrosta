@@ -38,24 +38,34 @@ export function calculateKilometers(depIata: string, arrIata: string): number {
 }
 
 export function calculateBlockMinutes(std: string, sta: string): number {
-  const [h1, m1] = std.split(':').map(Number);
-  const [h2, m2] = sta.split(':').map(Number);
-  if (isNaN(h1) || isNaN(h2)) return 0;
-  let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
-  if (diff < 0) diff += 1440; // Midnight crossing
-  return diff;
+  if (!std || !sta || std.includes('-') || sta.includes('-')) return 0;
+  try {
+    const [h1, m1] = std.split(':').map(Number);
+    const [h2, m2] = sta.split(':').map(Number);
+    if (isNaN(h1) || isNaN(m1) || isNaN(h2) || isNaN(m2)) return 0;
+    
+    let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+    if (diff < 0) diff += 1440; // Midnight crossing
+    return diff;
+  } catch {
+    return 0;
+  }
 }
 
 export function formatBlockHours(events: DutyEvent[]): string {
   let totalMinutes = 0;
   events.forEach(e => {
     if (e.type === 'FLIGHT' && e.std && e.sta) {
-        // Simple heuristic for block time if not parsed directly
-        const [h1, m1] = e.std.split(':').map(Number);
-        const [h2, m2] = e.sta.split(':').map(Number);
-        let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
-        if (diff < 0) diff += 1440; // Midnight crossing
-        totalMinutes += diff;
+        if (e.std.includes('-') || e.sta.includes('-')) return;
+        try {
+          const [h1, m1] = e.std.split(':').map(Number);
+          const [h2, m2] = e.sta.split(':').map(Number);
+          if (isNaN(h1) || isNaN(m1) || isNaN(h2) || isNaN(m2)) return;
+          
+          let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+          if (diff < 0) diff += 1440; // Midnight crossing
+          totalMinutes += diff;
+        } catch { /* ignore */ }
     }
   });
 

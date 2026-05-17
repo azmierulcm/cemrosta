@@ -68,11 +68,13 @@ export async function GET(
 
     // 3. Calculate Stats
     const sectors = monthFlights.filter(f => f.duty_type?.toLowerCase() === 'flight').length;
-    const totalKm = monthFlights.reduce((acc, f) => acc + Number(f.distance_km || 0), 0);
-    const totalMinutes = monthFlights.reduce((acc, f) => acc + Number(f.block_minutes || 0), 0);
+    const totalKm = monthFlights.reduce((acc, f) => acc + (Number(f.distance_km) || 0), 0);
+    const totalMinutes = monthFlights.reduce((acc, f) => acc + (Number(f.block_minutes) || 0), 0);
     const hours = Math.floor(totalMinutes / 60);
 
     const displayName = profile.display_name || 'Crew Member';
+    const cleanHandle = profile.handle ? `@${profile.handle}` : `@${displayName.toLowerCase().replace(/[^a-z0-9]/g, '.')}`;
+    
     const data = {
       month: month.toUpperCase(),
       year,
@@ -80,8 +82,8 @@ export async function GET(
       heroLabel: 'BLOCK HOURS',
       sectors,
       hours: hours.toString(),
-      km: totalKm > 1000 ? `${(totalKm / 1000).toFixed(1)}k` : totalKm.toString(),
-      handle: profile.handle ? `@${profile.handle}` : `@${displayName.toLowerCase().replace(/\s+/g, '.')}`
+      km: totalKm > 1000 ? `${(totalKm / 1000).toFixed(1)}k` : Math.round(totalKm).toString(),
+      handle: cleanHandle
     };
 
     // 4. Map to DutyEvent for Superlative engine

@@ -14,8 +14,10 @@ export default function PassportPage() {
   const [earnedAchievements, setEarnedAchievements] = useState<string[]>([]);
   const [recentFlights, setRecentFlights] = useState<Flight[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    Promise.resolve().then(() => setIsMounted(true));
     const fetchData = async () => {
       if (!user) {
         setIsLoading(false);
@@ -86,14 +88,14 @@ export default function PassportPage() {
     top_route_pair: 'KUL-LHR',
     top_route_count: 14,
     longest_sector_id: null,
-    updated_at: new Date().toISOString(),
+    updated_at: '2026-01-01T00:00:00Z',
   };
 
   const mockProfile: CrewProfile = {
     id: 'demo',
     user_id: 'demo',
     display_name: 'Crew Member',
-    rank: 'First Officer',
+    rank: 'First Officer' as CrewRank,
     base_iata: 'KUL',
     airline_code: 'MH',
     handle: 'crew.demo',
@@ -102,7 +104,7 @@ export default function PassportPage() {
     privacy_mode: 'public',
     hire_date: null,
     birthday: null,
-    created_at: new Date().toISOString()
+    created_at: '2026-01-01T00:00:00Z'
   };
 
   const mockFlights: Flight[] = [
@@ -112,7 +114,7 @@ export default function PassportPage() {
     { id: '4', crew_id: 'demo', flight_date: '2026-05-10', flight_number: 'MH 124', origin_iata: 'SIN', destination_iata: 'KUL' } as Flight,
   ];
 
-  if (isLoading) {
+  if (isLoading || !isMounted) {
     return (
       <div className="bg-passport-bg min-h-screen flex items-center justify-center">
         <Loader2 className="w-12 h-12 animate-spin text-passport-gold" />
@@ -134,7 +136,7 @@ export default function PassportPage() {
     privacy_mode: 'public',
     hire_date: null,
     birthday: null,
-    created_at: profile.created_at || new Date().toISOString()
+    created_at: profile.created_at || '2026-01-01T00:00:00Z'
   } : mockProfile;
 
   return (

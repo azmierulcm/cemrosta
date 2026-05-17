@@ -14,28 +14,28 @@ import { DutyEvent } from '../types';
  * Computes all possible superlatives for a month and returns the top-ranked one.
  */
 export function getTopSuperlative(events: DutyEvent[]): Superlative {
-  const flightEvents = events.filter(e => e.type === 'FLIGHT');
+  const flightEvents = events.filter(e => e.type === 'FLIGHT' && e.depPort && e.arrPort);
   
   const candidates: Superlative[] = [];
 
-  // 1. Marathon Runner (Longest Sector > 10h)
-  // Note: Needs signOff - signOn or sta - std. 
-  // For now we use a heuristic or just pick the one with max distance.
-  const longestFlight = flightEvents.reduce((prev, current) => {
-    const prevDist = (prev.depPort && prev.arrPort) ? calculateKilometers(prev.depPort, prev.arrPort) : 0;
-    const currDist = (current.depPort && current.arrPort) ? calculateKilometers(current.depPort, current.arrPort) : 0;
-    return currDist > prevDist ? current : prev;
-  }, flightEvents[0] || {} as Partial<DutyEvent>);
+  if (flightEvents.length > 0) {
+    // 1. Marathon Runner (Longest Sector)
+    const longestFlight = flightEvents.reduce((prev, current) => {
+      const prevDist = calculateKilometers(prev.depPort || '', prev.arrPort || '');
+      const currDist = calculateKilometers(current.depPort || '', current.arrPort || '');
+      return currDist > prevDist ? current : prev;
+    }, flightEvents[0]);
 
-  if (longestFlight.flightNumber && longestFlight.depPort && longestFlight.arrPort) {
-    const dist = calculateKilometers(longestFlight.depPort, longestFlight.arrPort);
-    candidates.push({
-      key: 'marathon',
-      label: 'Longest Sector',
-      value: `${longestFlight.depPort} → ${longestFlight.arrPort}`,
-      subValue: `${Math.round(dist).toLocaleString()} KM · ${longestFlight.flightNumber}`,
-      score: dist > 8000 ? 100 : 50 // High score if very long
-    });
+    if (longestFlight && longestFlight.depPort && longestFlight.arrPort) {
+      const dist = calculateKilometers(longestFlight.depPort, longestFlight.arrPort);
+      candidates.push({
+        key: 'marathon',
+        label: 'Longest Sector',
+        value: `${longestFlight.depPort} → ${longestFlight.arrPort}`,
+        subValue: `${Math.round(dist).toLocaleString()} KM · ${longestFlight.flightNumber || 'MH'}`,
+        score: dist > 8000 ? 100 : 50
+      });
+    }
   }
 
   // 2. New Frontier (Farthest from home - logic placeholder)
