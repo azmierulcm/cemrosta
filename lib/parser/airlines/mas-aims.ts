@@ -52,30 +52,54 @@ export function parseMasAims(text: string): ParsedRoster {
         const ports = allPorts.filter(p => !PORT_BLACKLIST.has(p.toUpperCase()));
 
         if (ports.length >= 2 && times.length >= 2) {
+          let stdVal = times[0];
+          let staVal = times[1];
+          let signOn: string | undefined;
+          let signOff: string | undefined;
+
+          if (times.length >= 4) {
+            signOn = times[0];
+            stdVal = times[1];
+            staVal = times[2];
+            signOff = times[3];
+          } else if (times.length === 3) {
+            if (ports[0] === 'KUL') {
+              signOn = times[0];
+              stdVal = times[1];
+              staVal = times[2];
+            } else {
+              stdVal = times[0];
+              staVal = times[1];
+              signOff = times[2];
+            }
+          }
+
+          // Sanity check for large gaps (e.g. SignOff picked as STA)
+          try {
+            if (stdVal && staVal) {
+              const [h1, m1] = stdVal.split(':').map(Number);
+              const [h2, m2] = staVal.split(':').map(Number);
+              let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+              if (diff < 0) diff += 1440; // Crossed midnight
+
+              if (diff > 360 && times.length >= 2) { // > 6 hours
+                if (times.length === 2) {
+                  signOff = staVal;
+                  staVal = '00:00'; // Mark as TBD/Unknown
+                }
+              }
+            }
+          } catch { /* ignore parse errors */ }
+
           const flight: ParsedFlight = {
             flightNumber: `MH ${flightNo.padStart(3, '0')}`,
             depPort: ports[0] || '???',
             arrPort: ports[1] || '???',
-            std: times[0] || '00:00',
-            sta: times[1] || '00:00',
+            std: stdVal || '00:00',
+            sta: staVal || '00:00',
+            signOn,
+            signOff,
           };
-
-          if (times.length >= 4) {
-            flight.signOn = times[0];
-            flight.std = times[1];
-            flight.sta = times[2];
-            flight.signOff = times[3];
-          } else if (times.length === 3) {
-            if (ports[0] === 'KUL') {
-              flight.signOn = times[0];
-              flight.std = times[1];
-              flight.sta = times[2];
-            } else {
-              flight.std = times[0];
-              flight.sta = times[1];
-              flight.signOff = times[2];
-            }
-          }
 
           dayDuties.push({
             id: `MH${flightNo}-${currentDate}-${dayDuties.length}`,

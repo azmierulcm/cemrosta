@@ -154,8 +154,18 @@ export async function updateDuty(dutyId: string, updates: Partial<DutyEvent>) {
     const dateStr = updates.date || existing.flight_date;
 
     const combineDateAndTime = (d: string, t?: string) => {
-      if (!t || t === '--:--' || t.includes('T')) return t; // Already a timestamp or empty
-      return new Date(`${d}T${t}:00Z`).toISOString();
+      if (!t || t === '--:--') return new Date(`${d}T00:00:00Z`).toISOString();
+      if (t.includes('T')) return t; // Already ISO
+
+      try {
+        const cleanTime = t.trim();
+        const finalStr = `${d}T${cleanTime.length === 5 ? cleanTime : '00:00'}:00Z`;
+        const date = new Date(finalStr);
+        if (isNaN(date.getTime())) return new Date(`${d}T00:00:00Z`).toISOString();
+        return date.toISOString();
+      } catch {
+        return new Date(`${d}T00:00:00Z`).toISOString();
+      }
     };
 
     const { error } = await supabase

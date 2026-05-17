@@ -101,34 +101,53 @@ def perform_extraction(text: str) -> RosterData:
                 ports = [p for p in all_ports if p.upper() not in PORT_BLACKLIST]
                 
                 if len(ports) >= 2 and len(times) >= 2:
+                    # Heuristic for multi-time lines (e.g. SignOn STD STA SignOff)
+                    # We want to pick the times that are closest together for STD/STA
+                    
+                    std_val, sta_val = times[0], times[1]
+                    sign_on, sign_off = None, None
+
+                    if len(times) >= 4:
+                        sign_on, std_val, sta_val, sign_off = times[0], times[1], times[2], times[3]
+                    elif len(times) == 3:
+                        # If first port is KUL, likely SignOn, STD, STA
+                        if ports[0] == 'KUL':
+                            sign_on, std_val, sta_val = times[0], times[1], times[2]
+                        else: # Likely STD, STA, SignOff
+                            std_val, sta_val, sign_off = times[0], times[1], times[2]
+                    
+                    # Sanity check: if STA is way after STD for a short flight, 
+                    # it might be picking up SignOff as STA
+                    try:
+                        t1 = datetime.strptime(std_val, "%H:%M")
+                        t2 = datetime.strptime(sta_val, "%H:%M")
+                        diff = (t2 - t1).total_seconds() / 3600
+                        if diff < 0: diff += 24 # Crossed midnight
+                        
+                        # If diff > 6 hours and it's not a long haul (approx heuristic)
+                        if diff > 6 and len(times) >= 2:
+                            # If we have more times, maybe sta_val was actually sign_off
+                            if len(times) == 2:
+                                # We only have 2 times, but they are far apart. 
+                                # This is messy. Let's assume the 2nd one is SignOff
+                                # and leave STA as unknown or same as SignOff for now
+                                sign_off = sta_val
+                                sta_val = "--:--"
+                    except:
+                        pass
+
                     event = DutyEvent(
                         id=f"MH{flight_no}-{current_date}-{len(day_events)}",
                         type="FLIGHT",
                         date=current_date,
-                        flight_number=f"MH {flight_no.zfill(3)}", # Standardized padding
+                        flight_number=f"MH {flight_no.zfill(3)}",
                         dep_port=ports[0],
                         arr_port=ports[1],
-                        std=times[0],
-                        sta=times[1],
+                        std=std_val,
+                        sta=sta_val,
+                        sign_on=sign_on or std_val,
+                        sign_off=sign_off or sta_val
                     )
-                    
-                    # If there are 4 times, they are usually SignOn, STD, STA, SignOff
-                    if len(times) >= 4:
-                        event.sign_on = times[0]
-                        event.std = times[1]
-                        event.sta = times[2]
-                        event.sign_off = times[3]
-                    elif len(times) == 3:
-                        # Heuristic: if first port is base (KUL), first time might be SignOn
-                        if ports[0] == 'KUL':
-                            event.sign_on = times[0]
-                            event.std = times[1]
-                            event.sta = times[2]
-                        else:
-                            event.std = times[0]
-                            event.sta = times[1]
-                            event.sign_off = times[2]
-                    
                     day_events.append(event)
                 continue
 
