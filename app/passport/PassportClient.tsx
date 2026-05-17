@@ -27,7 +27,7 @@ export default function PassportPage() {
         .from('crew_stats')
         .select('*')
         .eq('crew_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (statsData) setStats(statsData as CrewStats);
 

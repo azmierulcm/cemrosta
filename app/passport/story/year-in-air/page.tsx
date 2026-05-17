@@ -25,7 +25,7 @@ export default function YearInAirStoryPage() {
         .from('crew_stats')
         .select('*')
         .eq('crew_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (statsData) setStats(statsData as CrewStats);
 
@@ -34,7 +34,7 @@ export default function YearInAirStoryPage() {
         .from('crew_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profileData) setProfile(profileData as CrewProfile);
 

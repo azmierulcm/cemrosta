@@ -147,7 +147,7 @@ export async function updateDuty(dutyId: string, updates: Partial<DutyEvent>) {
       .from('flights')
       .select('flight_date, crew_id')
       .eq('id', dutyId)
-      .single();
+      .maybeSingle();
 
     if (!existing) throw new Error('Duty not found');
 
@@ -202,7 +202,7 @@ export async function deleteDuty(dutyId: string) {
       .from('flights')
       .select('crew_id')
       .eq('id', dutyId)
-      .single();
+      .maybeSingle();
 
     const { error } = await supabase
       .from('flights')
@@ -231,7 +231,7 @@ export async function deleteMonthlyRoster(userId: string, month: string, year: s
       .from('crew_profiles')
       .select('id')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (!profile) throw new Error('Profile not found');
 

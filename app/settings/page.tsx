@@ -24,7 +24,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (profile && !hasHydrated.current) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         full_name: profile.full_name || '',
         rank: profile.rank || 'First Officer',

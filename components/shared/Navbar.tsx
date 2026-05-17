@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Menu, X, Upload, LayoutDashboard, Calendar, MapPinned, ShoppingBag, Settings as SettingsIcon, UserPlus } from 'lucide-react';
+import { Menu, X, Upload, LayoutDashboard, MapPinned, ShoppingBag, Settings as SettingsIcon, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useRoster } from '@/lib/contexts/RosterContext';
@@ -31,7 +31,6 @@ export const Navbar = () => {
 
   const navLinks = [
     { label: 'Timeline', href: '/', icon: LayoutDashboard, authRequired: true },
-    { label: 'Calendar', href: '/calendar', icon: Calendar, authRequired: true },
     { label: 'Passport', href: '/profile', icon: MapPinned, authRequired: true },
     { label: 'Marketplace', href: '/marketplace', icon: ShoppingBag, authRequired: true },
     { label: 'Settings', href: '/settings', icon: SettingsIcon, authRequired: true },

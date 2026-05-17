@@ -29,9 +29,10 @@ export async function reportListing({ listingId, reporterId, reason, details }: 
       .from('marketplace_listings')
       .select('reports_count')
       .eq('id', listingId)
-      .single();
+      .maybeSingle();
 
     if (fetchError) throw fetchError;
+    if (!listing) throw new Error('Listing not found');
 
     const newCount = (listing.reports_count || 0) + 1;
 

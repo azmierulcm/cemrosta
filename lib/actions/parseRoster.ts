@@ -134,7 +134,7 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
         ...profilePayload
       } as unknown as CrewProfile, { onConflict: 'id' })
       .select('id')
-      .single();
+      .maybeSingle();
 
     if (crewProfileError || !crewProfile) {
       console.error('Crew Profile Sync Error:', crewProfileError);

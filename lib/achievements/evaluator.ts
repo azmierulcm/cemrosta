@@ -13,7 +13,7 @@ export async function evaluateAchievements(crewId: string, currentStats: CrewSta
     .from('crew_profiles')
     .select('*')
     .eq('id', crewId)
-    .single();
+    .maybeSingle();
 
   // 2. Fetch existing achievements to avoid duplicates
   const { data: existing } = await supabase

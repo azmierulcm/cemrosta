@@ -40,7 +40,7 @@ export const StoriesTemplate = ({ data, superlative, watermark = true }: Templat
         backgroundColor: bg,
         padding: '100px 80px',
         color: text,
-        fontFamily: 'Inter',
+        fontFamily: 'sans-serif',
       }}
     >
       {/* Background Glow Simulator */}
@@ -111,7 +111,7 @@ export const CardTemplate = ({ data, superlative, watermark = true }: TemplatePr
         display: 'flex',
         backgroundColor: bg,
         color: text,
-        fontFamily: 'Inter',
+        fontFamily: 'sans-serif',
       }}
     >
       {/* Left Column */}
