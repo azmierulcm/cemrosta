@@ -62,7 +62,7 @@ def perform_extraction(text: str) -> RosterData:
     }
 
     # Blacklist for IATA-lookalikes that are definitely NOT airports
-    PORT_BLACKLIST = {'OFF', 'GDO', 'LVE', 'SIM', 'TRG', 'MH', 'DAY', 'UTC', 'LOC', 'RMK', 'RPT', 'HOU', 'MIN'}
+    PORT_BLACKLIST = {'OFF', 'GDO', 'LVE', 'SIM', 'TRG', 'MH', 'DAY', 'UTC', 'LOC', 'RMK', 'RPT', 'HOU', 'MIN', 'SEC', 'HRS', 'DUR'}
 
     # Extract crew name
     name_match = re.search(r'Name:\s*([A-Z\s,]+)', text, re.IGNORECASE)
@@ -80,101 +80,93 @@ def perform_extraction(text: str) -> RosterData:
         end_idx = matches[i+1].start() if i+1 < len(matches) else len(text)
         chunk = text[start_idx:end_idx]
 
-        # Check for Ground Duties first (to avoid mis-parsing as flights)
-        ground_duty_match = re.search(r'\b(OFF|GDO|LVE|LEAVE|AL|ANNUAL LEAVE|SIM|GRD|TRG|TRAINING|SEP|CRM|MED)\b', chunk, re.IGNORECASE)
+        # New approach: Line-based parsing within the day chunk
+        lines = chunk.split('\n')
+        day_events = []
         
-        # 1. Flights
-        flight_matches = list(re.finditer(r'MH\s*(\d+)', chunk, re.IGNORECASE))
-        for f_idx, f_match in enumerate(flight_matches):
-            flight_no = f_match.group(1)
-            # Take a small sub-chunk after the flight number to find its specific ports/times
-            # This prevents picking up data from the NEXT flight in the same day
-            next_f_start = flight_matches[f_idx+1].start() if f_idx+1 < len(flight_matches) else len(chunk)
-            f_sub_chunk = chunk[f_match.start():next_f_start]
+        for line in lines:
+            line = line.strip()
+            if not line: continue
             
-            times = re.findall(r'\d{2}:\d{2}', f_sub_chunk)
-            all_ports = re.findall(r'\b[A-Z]{3}\b', f_sub_chunk)
-            # Filter out blacklisted codes
-            ports = [p for p in all_ports if p.upper() not in PORT_BLACKLIST]
+            # 1. Flight Line Detection
+            flight_match = re.search(r'MH\s*(\d+)', line, re.IGNORECASE)
+            if flight_match:
+                flight_no = flight_match.group(1)
+                
+                # Times on this specific line
+                times = re.findall(r'\d{2}:\d{2}', line)
+                
+                # Ports on this specific line
+                all_ports = re.findall(r'\b[A-Z]{3}\b', line)
+                ports = [p for p in all_ports if p.upper() not in PORT_BLACKLIST]
+                
+                if len(ports) >= 2 and len(times) >= 2:
+                    event = DutyEvent(
+                        id=f"MH{flight_no}-{current_date}-{len(day_events)}",
+                        type="FLIGHT",
+                        date=current_date,
+                        flight_number=f"MH {flight_no.zfill(3)}", # Standardized padding
+                        dep_port=ports[0],
+                        arr_port=ports[1],
+                        std=times[0],
+                        sta=times[1],
+                    )
+                    
+                    # If there are 4 times, they are usually SignOn, STD, STA, SignOff
+                    if len(times) >= 4:
+                        event.sign_on = times[0]
+                        event.std = times[1]
+                        event.sta = times[2]
+                        event.sign_off = times[3]
+                    elif len(times) == 3:
+                        # Heuristic: if first port is base (KUL), first time might be SignOn
+                        if ports[0] == 'KUL':
+                            event.sign_on = times[0]
+                            event.std = times[1]
+                            event.sta = times[2]
+                        else:
+                            event.std = times[0]
+                            event.sta = times[1]
+                            event.sign_off = times[2]
+                    
+                    day_events.append(event)
+                continue
 
-            event = DutyEvent(
-                id=f"MH{flight_no}-{current_date}-{f_idx}",
-                type="FLIGHT",
-                date=current_date,
-                flight_number=f"MH{flight_no}",
-                dep_port=ports[0] if len(ports) > 0 else "???",
-                arr_port=ports[1] if len(ports) > 1 else "???",
-                std=times[0] if len(times) > 0 else "00:00",
-                sta=times[1] if len(times) > 1 else "00:00",
-            )
-            
-            # Refine times if more are present (SignOn / STD / STA / SignOff pattern)
-            if f_idx == 0: # First flight of the day usually has SignOn
-                if len(times) >= 4:
-                    event.sign_on = times[0]
-                    event.std = times[1]
-                    event.sta = times[2]
-                    event.sign_off = times[3]
-                elif len(times) == 3: # SignOn, STD, STA
-                    event.sign_on = times[0]
-                    event.std = times[1]
-                    event.sta = times[2]
-            else: # Subsequent flights in the same day
-                if len(times) >= 3: # STD, STA, SignOff
-                    event.std = times[0]
-                    event.sta = times[1]
-                    event.sign_off = times[2]
-                elif len(times) == 2: # Just STD, STA
-                    event.std = times[0]
-                    event.sta = times[1]
+            # 2. Standby Detection
+            standby_match = re.search(r'\b(S\d+-\d+)\b', line, re.IGNORECASE)
+            if standby_match:
+                code = standby_match.group(1)
+                times = re.findall(r'\d{2}:\d{2}', line)
+                day_events.append(DutyEvent(
+                    id=f"{code}-{current_date}",
+                    type="STANDBY",
+                    date=current_date,
+                    sign_on=times[0] if len(times) > 0 else "--:--",
+                    sign_off=times[-1] if len(times) > 1 else "--:--",
+                    description=f"Standby {code.upper()}"
+                ))
+                continue
 
-            events.append(event)
+            # 3. Ground Duties Detection (Only if no events yet for the day)
+            ground_match = re.search(r'\b(OFF|GDO|LVE|LEAVE|AL|ANNUAL LEAVE|SIM|GRD|TRG|TRAINING|SEP|CRM|MED)\b', line, re.IGNORECASE)
+            if ground_match and not day_events:
+                d_desc = ground_match.group(1).upper()
+                d_type = "GROUND"
+                if d_desc in ('OFF', 'GDO'): d_type, d_desc = "OFF", "Day Off"
+                elif d_desc in ('LVE', 'LEAVE', 'AL'): d_type, d_desc = "LEAVE", "Annual Leave"
+                elif d_desc in ('SIM', 'GRD', 'TRG', 'TRAINING', 'SEP', 'CRM', 'MED'):
+                    d_type, d_desc = "TRAINING", f"Training ({d_desc})"
+                
+                day_events.append(DutyEvent(
+                    id=f"GND-{d_type}-{current_date}",
+                    type=d_type,
+                    date=current_date,
+                    description=d_desc
+                ))
 
-        # 2. Standbys (e.g., S1-1, S2-4)
-        standby_matches = list(re.finditer(r'\b(S\d+-\d+)\b', chunk, re.IGNORECASE))
-        for s_match in standby_matches:
-            code = s_match.group(1)
-            s_chunk = chunk[s_match.start():]
-            times = re.findall(r'\d{2}:\d{2}', s_chunk)
-            
-            events.append(DutyEvent(
-                id=f"{code}-{current_date}",
-                type="STANDBY",
-                date=current_date,
-                sign_on=times[0] if times else "--:--",
-                sign_off=times[-1] if times else "--:--",
-                description=f"Standby {code.upper()}"
-            ))
-
-        # 3. Ground Duties (Only if no flights/standbys found, to avoid duplicates)
-        if not flight_matches and not standby_matches and ground_duty_match:
-            d_type = "OTHER"
-            d_desc = ground_duty_match.group(1).upper()
-            
-            if d_desc in ('OFF', 'GDO'):
-                d_type = "OFF"
-                d_desc = "Day Off"
-            elif d_desc in ('LVE', 'LEAVE', 'AL'):
-                d_type = "LEAVE"
-                d_desc = "Annual Leave"
-            elif d_desc in ('SIM', 'GRD', 'TRG', 'TRAINING', 'SEP', 'CRM', 'MED'):
-                d_type = "TRAINING"
-                d_desc = f"Training ({d_desc})"
-
-            events.append(DutyEvent(
-                id=f"GND-{d_type}-{current_date}",
-                type=d_type,
-                date=current_date,
-                description=d_desc
-            ))
-
-    return RosterData(
-        crew_name=crew_name,
-        month=matches[0].group(2),
-        year=matches[0].group(3),
-        airline="Malaysia Airlines",
-        events=events
-    )
+        # Add collected day events to total list, sorted by time
+        day_events.sort(key=lambda x: x.std or x.sign_on or "99:99")
+        events.extend(day_events)
 
     return RosterData(
         crew_name=crew_name,
