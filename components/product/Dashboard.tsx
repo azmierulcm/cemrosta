@@ -17,6 +17,20 @@ export const EventCard = ({ event, index, onEdit }: { event: DutyEvent; index: n
   const isFlight = event.type === 'FLIGHT';
   const isStandby = event.type === 'STANDBY';
 
+  const formatTime = (timeStr?: string) => {
+    if (!timeStr || timeStr === '--:--') return '--:--';
+    // If it's an ISO string (contains T), extract the HH:mm part
+    if (timeStr.includes('T')) {
+      try {
+        const timePart = timeStr.split('T')[1]; // get 21:31:00+00:00
+        return timePart.substring(0, 5); // get 21:31
+      } catch {
+        return timeStr;
+      }
+    }
+    return timeStr;
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -56,17 +70,21 @@ export const EventCard = ({ event, index, onEdit }: { event: DutyEvent; index: n
               )}
             </div>
             <h3 className="text-3xl font-bold text-text tracking-tighter">
-              {isFlight ? `Flight ${event.flightNumber}` : `Duty Code: ${event.id}`}
+              {isFlight 
+                ? (event.flightNumber?.includes('MH') ? event.flightNumber : `Flight ${event.flightNumber}`) 
+                : `Duty Code: ${event.id}`}
             </h3>
             {isFlight && (
               <div className="flex items-center gap-3 mt-3 text-text-muted font-bold text-xl tracking-tight">
-                <span className="text-text">{event.depPort}</span>
+                <span className="text-text">{event.depPort || 'KUL'}</span>
                 <div className="flex items-center gap-1">
                    <div className="w-1.5 h-1.5 rounded-full bg-accent/30" />
                    <div className="w-8 h-[2px] bg-accent/20" />
                    <div className="w-1.5 h-1.5 rounded-full bg-accent" />
                 </div>
-                <span className="text-text">{event.arrPort}</span>
+                <span className={event.arrPort === '???' ? 'text-text-subtle/40 italic' : 'text-text'}>
+                  {event.arrPort === '???' ? 'TBD' : (event.arrPort || 'KUL')}
+                </span>
               </div>
             )}
           </div>
@@ -75,11 +93,11 @@ export const EventCard = ({ event, index, onEdit }: { event: DutyEvent; index: n
         <div className="flex flex-wrap gap-6 md:text-right">
           <div className="bg-surface-2 px-6 py-4 rounded-2xl border border-border shadow-sm min-w-[120px]">
             <p className="text-[10px] font-black text-text-subtle uppercase tracking-[0.2em] mb-2 font-mono">Sign On</p>
-            <p className="text-2xl font-black text-text font-mono">{event.signOn || event.std || '--:--'}</p>
+            <p className="text-2xl font-black text-text font-mono">{formatTime(event.signOn || event.std)}</p>
           </div>
           <div className="bg-surface-2 px-6 py-4 rounded-2xl border border-border shadow-sm min-w-[120px]">
             <p className="text-[10px] font-black text-text-subtle uppercase tracking-[0.2em] mb-2 font-mono">Sign Off</p>
-            <p className="text-2xl font-black text-text font-mono">{event.signOff || event.sta || '--:--'}</p>
+            <p className="text-2xl font-black text-text font-mono">{formatTime(event.signOff || event.sta)}</p>
           </div>
         </div>
       </div>
@@ -90,13 +108,13 @@ export const EventCard = ({ event, index, onEdit }: { event: DutyEvent; index: n
             <div className="w-8 h-8 rounded-xl bg-surface-2 flex items-center justify-center border border-border">
                <Clock className="w-4 h-4 text-accent" />
             </div>
-            <span>STD {event.std}</span>
+            <span>STD {formatTime(event.std)}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-surface-2 flex items-center justify-center border border-border">
                <Clock className="w-4 h-4 text-accent" />
             </div>
-            <span>STA {event.sta || '--:--'}</span>
+            <span>STA {formatTime(event.sta)}</span>
           </div>
           {event.aircraftType && (
             <div className="flex items-center gap-3">

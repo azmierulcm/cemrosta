@@ -14,16 +14,30 @@ interface EditDutyModalProps {
 }
 
 export const EditDutyModal = ({ isOpen, onClose, event, onSave, onDelete }: EditDutyModalProps) => {
+  const formatTime = (timeStr?: string) => {
+    if (!timeStr || timeStr === '--:--') return '';
+    if (timeStr.includes('T')) {
+      try {
+        const timePart = timeStr.split('T')[1];
+        return timePart.substring(0, 5);
+      } catch {
+        return timeStr;
+      }
+    }
+    return timeStr;
+  };
+
   const [formData, setFormData] = useState<Partial<DutyEvent>>({
     flightNumber: event.flightNumber,
     depPort: event.depPort,
     arrPort: event.arrPort,
-    std: event.std,
-    sta: event.sta,
-    signOn: event.signOn,
-    signOff: event.signOff,
+    std: formatTime(event.std),
+    sta: formatTime(event.sta),
+    signOn: formatTime(event.signOn),
+    signOff: formatTime(event.signOff),
     aircraftType: event.aircraftType,
     type: event.type,
+    description: event.description
   });
 
   const [isSaving, setIsSaving] = useState(false);

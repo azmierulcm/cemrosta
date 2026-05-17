@@ -1,4 +1,4 @@
-import { ParsedRoster, ParsedDuty, ParsedFlight } from '../types';
+import { ParsedRoster, ParsedDuty, ParsedFlight, DutyType } from '../types';
 
 export function parseMasAims(text: string): ParsedRoster {
   const duties: ParsedDuty[] = [];
@@ -16,9 +16,12 @@ export function parseMasAims(text: string): ParsedRoster {
     'JUL': '07', 'AUG': '08', 'SEP': '09', 'OCT': '10', 'NOV': '11', 'DEC': '12'
   };
 
-  // Extract crew name - heuristic for MAS AIMS
-  const crewNameMatch = text.match(/Name:\s*([A-Z\s]+)/i);
-  const crewName = crewNameMatch ? crewNameMatch[1].trim() : 'Crew Member';
+  const PORT_BLACKLIST = new Set(['OFF', 'GDO', 'LVE', 'SIM', 'TRG', 'MH', 'DAY', 'UTC', 'LOC', 'RMK', 'RPT', 'HOU', 'MIN']);
+
+  // Extract crew name
+  const crewNameMatch = text.match(/Name:\s*([A-Z\s,]+)/i);
+  let crewName = crewNameMatch ? crewNameMatch[1].trim() : 'Crew Member';
+  crewName = crewName.replace(/\s+/g, ' ').replace(/,/g, '');
 
   // 2. Extract chunks between dates
   for (let i = 0; i < matches.length; i++) {
@@ -28,21 +31,25 @@ export function parseMasAims(text: string): ParsedRoster {
     const year = match[3];
     const currentDate = `${year}-${months[monthStr] || '01'}-${day}`;
 
-    // Get text from this date to the next date
     const startIdx = match.index! + match[0].length;
-    const endIdx = matches[i + 1] ? matches[i + 1].index : text.length;
+    const endIdx = matches[i + 1] ? matches[i + 1].index! : text.length;
     const chunk = text.substring(startIdx, endIdx);
 
-    // 3. Extract Flights within this chunk (MH \d+)
+    // Ground Duty Check
+    const groundDutyMatch = chunk.match(/\b(OFF|GDO|LVE|LEAVE|AL|ANNUAL LEAVE|SIM|GRD|TRG|TRAINING|SEP|CRM|MED)\b/i);
+
+    // 3. Extract Flights
     const flightRegex = /MH\s*(\d+)/gi;
     const flightMatches = Array.from(chunk.matchAll(flightRegex));
 
     flightMatches.forEach((fMatch, fIdx) => {
       const flightNo = fMatch[1];
-      const flightChunk = chunk.substring(fMatch.index!);
+      const nextFStart = flightMatches[fIdx + 1] ? flightMatches[fIdx + 1].index! : chunk.length;
+      const flightChunk = chunk.substring(fMatch.index!, nextFStart);
       
       const times = flightChunk.match(/\d{2}:\d{2}/g) || [];
-      const ports = flightChunk.match(/\b[A-Z]{3}\b/g) || [];
+      const allPorts = flightChunk.match(/\b[A-Z]{3}\b/g) || [];
+      const ports = allPorts.filter(p => !PORT_BLACKLIST.has(p.toUpperCase()));
 
       const flight: ParsedFlight = {
         flightNumber: `MH${flightNo}`,
@@ -52,15 +59,26 @@ export function parseMasAims(text: string): ParsedRoster {
         sta: times[1] || '00:00',
       };
 
-      if (fIdx === 0 && times.length >= 4 && ports.length >= 2) {
-        flight.signOn = times[0];
-        flight.std = times[1] || '00:00';
-        flight.sta = times[2] || '00:00';
-        flight.signOff = times[3];
-      } else if (times.length >= 3 && ports.length >= 2) {
-        flight.std = times[0] || '00:00';
-        flight.sta = times[1] || '00:00';
-        flight.signOff = times[2];
+      if (fIdx === 0) {
+        if (times.length >= 4) {
+          flight.signOn = times[0];
+          flight.std = times[1];
+          flight.sta = times[2];
+          flight.signOff = times[3];
+        } else if (times.length === 3) {
+          flight.signOn = times[0];
+          flight.std = times[1];
+          flight.sta = times[2];
+        }
+      } else {
+        if (times.length >= 3) {
+          flight.std = times[0] || '00:00';
+          flight.sta = times[1] || '00:00';
+          flight.signOff = times[2];
+        } else if (times.length === 2) {
+          flight.std = times[0] || '00:00';
+          flight.sta = times[1] || '00:00';
+        }
       }
 
       duties.push({
@@ -71,8 +89,8 @@ export function parseMasAims(text: string): ParsedRoster {
       });
     });
 
-    // 4. Extract Standbys within this chunk (S\d+-\d+)
-    const standbyRegex = /(S\d+-\d+)/gi;
+    // 4. Extract Standbys
+    const standbyRegex = /\b(S\d+-\d+)\b/gi;
     const standbyMatches = Array.from(chunk.matchAll(standbyRegex));
 
     standbyMatches.forEach((sMatch) => {
@@ -90,31 +108,28 @@ export function parseMasAims(text: string): ParsedRoster {
       });
     });
 
-    // 5. Extract Other Duties (OFF, LEAVE, TRAINING)
-    // Heuristic for MAS codes
-    if (flightMatches.length === 0 && standbyMatches.length === 0) {
-      if (chunk.match(/\bOFF\b|\bGDO\b/i)) {
-        duties.push({
-          id: `OFF-${currentDate}`,
-          type: 'OFF',
-          date: currentDate,
-          description: 'Day Off',
-        });
-      } else if (chunk.match(/\bLVE\b|\bLEAVE\b|\bAL\b/i)) {
-        duties.push({
-          id: `LVE-${currentDate}`,
-          type: 'LEAVE',
-          date: currentDate,
-          description: 'Annual Leave',
-        });
-      } else if (chunk.match(/\bSIM\b|\bGRD\b|\bTRG\b|\bTRAINING\b/i)) {
-        duties.push({
-          id: `TRG-${currentDate}`,
-          type: 'TRAINING',
-          date: currentDate,
-          description: 'Training/Simulator',
-        });
+    // 5. Extract Ground Duties (Only if no flights/standbys)
+    if (flightMatches.length === 0 && standbyMatches.length === 0 && groundDutyMatch) {
+      let dType: 'OFF' | 'LEAVE' | 'TRAINING' | 'OTHER' = 'OTHER';
+      let dDesc = groundDutyMatch[1].toUpperCase();
+      
+      if (['OFF', 'GDO'].includes(dDesc)) {
+        dType = 'OFF';
+        dDesc = 'Day Off';
+      } else if (['LVE', 'LEAVE', 'AL'].includes(dDesc)) {
+        dType = 'LEAVE';
+        dDesc = 'Annual Leave';
+      } else if (['SIM', 'GRD', 'TRG', 'TRAINING', 'SEP', 'CRM', 'MED'].includes(dDesc)) {
+        dType = 'TRAINING';
+        dDesc = `Training (${dDesc})`;
       }
+
+      duties.push({
+        id: `GND-${dType}-${currentDate}`,
+        type: dType as DutyType,
+        date: currentDate,
+        description: dDesc,
+      });
     }
   }
 

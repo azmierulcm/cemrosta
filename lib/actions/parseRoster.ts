@@ -198,7 +198,15 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
 
         const dep = e.depPort?.toUpperCase() || 'KUL';
         const arr = e.arrPort?.toUpperCase() || 'KUL';
-        const flightNum = e.flightNumber || `DUTY-${e.type}-${e.id.slice(-4)}`;
+        
+        // Improve flight number formatting (e.g., MH1 -> MH 001)
+        let flightNum = e.flightNumber || `DUTY-${e.type}-${e.id.slice(-4)}`;
+        if (flightNum.startsWith('MH')) {
+          const numPart = flightNum.replace('MH', '').trim();
+          if (/^\d+$/.test(numPart)) {
+            flightNum = `MH ${numPart.padStart(3, '0')}`;
+          }
+        }
         
         const uniqueKey = `${crewProfile.id}-${e.date}-${flightNum}`;
 

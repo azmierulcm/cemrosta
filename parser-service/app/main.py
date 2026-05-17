@@ -61,9 +61,14 @@ def perform_extraction(text: str) -> RosterData:
         'JUL': '07', 'AUG': '08', 'SEP': '09', 'OCT': '10', 'NOV': '11', 'DEC': '12'
     }
 
+    # Blacklist for IATA-lookalikes that are definitely NOT airports
+    PORT_BLACKLIST = {'OFF', 'GDO', 'LVE', 'SIM', 'TRG', 'MH', 'DAY', 'UTC', 'LOC', 'RMK', 'RPT', 'HOU', 'MIN'}
+
     # Extract crew name
-    name_match = re.search(r'Name:\s*([A-Z\s]+)', text, re.IGNORECASE)
+    name_match = re.search(r'Name:\s*([A-Z\s,]+)', text, re.IGNORECASE)
     crew_name = name_match.group(1).strip() if name_match else "Crew Member"
+    # Clean name if it contains commas or extra spaces
+    crew_name = re.sub(r'\s+', ' ', crew_name).replace(',', '')
 
     for i in range(len(matches)):
         match = matches[i]
@@ -75,14 +80,22 @@ def perform_extraction(text: str) -> RosterData:
         end_idx = matches[i+1].start() if i+1 < len(matches) else len(text)
         chunk = text[start_idx:end_idx]
 
-        # Flights
+        # Check for Ground Duties first (to avoid mis-parsing as flights)
+        ground_duty_match = re.search(r'\b(OFF|GDO|LVE|LEAVE|AL|ANNUAL LEAVE|SIM|GRD|TRG|TRAINING|SEP|CRM|MED)\b', chunk, re.IGNORECASE)
+        
+        # 1. Flights
         flight_matches = list(re.finditer(r'MH\s*(\d+)', chunk, re.IGNORECASE))
         for f_idx, f_match in enumerate(flight_matches):
             flight_no = f_match.group(1)
-            flight_chunk = chunk[f_match.start():]
+            # Take a small sub-chunk after the flight number to find its specific ports/times
+            # This prevents picking up data from the NEXT flight in the same day
+            next_f_start = flight_matches[f_idx+1].start() if f_idx+1 < len(flight_matches) else len(chunk)
+            f_sub_chunk = chunk[f_match.start():next_f_start]
             
-            times = re.findall(r'\d{2}:\d{2}', flight_chunk)
-            ports = re.findall(r'\b[A-Z]{3}\b', flight_chunk)
+            times = re.findall(r'\d{2}:\d{2}', f_sub_chunk)
+            all_ports = re.findall(r'\b[A-Z]{3}\b', f_sub_chunk)
+            # Filter out blacklisted codes
+            ports = [p for p in all_ports if p.upper() not in PORT_BLACKLIST]
 
             event = DutyEvent(
                 id=f"MH{flight_no}-{current_date}-{f_idx}",
@@ -95,21 +108,30 @@ def perform_extraction(text: str) -> RosterData:
                 sta=times[1] if len(times) > 1 else "00:00",
             )
             
-            # Refine times if more are present (SignOn/SignOff)
-            if f_idx == 0 and len(times) >= 4:
-                event.sign_on = times[0]
-                event.std = times[1]
-                event.sta = times[2]
-                event.sign_off = times[3]
-            elif len(times) >= 3:
-                event.std = times[0]
-                event.sta = times[1]
-                event.sign_off = times[2]
+            # Refine times if more are present (SignOn / STD / STA / SignOff pattern)
+            if f_idx == 0: # First flight of the day usually has SignOn
+                if len(times) >= 4:
+                    event.sign_on = times[0]
+                    event.std = times[1]
+                    event.sta = times[2]
+                    event.sign_off = times[3]
+                elif len(times) == 3: # SignOn, STD, STA
+                    event.sign_on = times[0]
+                    event.std = times[1]
+                    event.sta = times[2]
+            else: # Subsequent flights in the same day
+                if len(times) >= 3: # STD, STA, SignOff
+                    event.std = times[0]
+                    event.sta = times[1]
+                    event.sign_off = times[2]
+                elif len(times) == 2: # Just STD, STA
+                    event.std = times[0]
+                    event.sta = times[1]
 
             events.append(event)
 
-        # Standbys
-        standby_matches = list(re.finditer(r'(S\d+-\d+)', chunk, re.IGNORECASE))
+        # 2. Standbys (e.g., S1-1, S2-4)
+        standby_matches = list(re.finditer(r'\b(S\d+-\d+)\b', chunk, re.IGNORECASE))
         for s_match in standby_matches:
             code = s_match.group(1)
             s_chunk = chunk[s_match.start():]
@@ -124,14 +146,35 @@ def perform_extraction(text: str) -> RosterData:
                 description=f"Standby {code.upper()}"
             ))
 
-        # OFF, LEAVE, TRAINING
-        if not flight_matches and not standby_matches:
-            if re.search(r'\bOFF\b|\bGDO\b', chunk, re.IGNORECASE):
-                events.append(DutyEvent(id=f"OFF-{current_date}", type="OFF", date=current_date, description="Day Off"))
-            elif re.search(r'\bLVE\b|\bLEAVE\b|\bAL\b', chunk, re.IGNORECASE):
-                events.append(DutyEvent(id=f"LVE-{current_date}", type="LEAVE", date=current_date, description="Annual Leave"))
-            elif re.search(r'\bSIM\b|\bGRD\b|\bTRG\b|\bTRAINING\b', chunk, re.IGNORECASE):
-                events.append(DutyEvent(id=f"TRG-{current_date}", type="TRAINING", date=current_date, description="Training"))
+        # 3. Ground Duties (Only if no flights/standbys found, to avoid duplicates)
+        if not flight_matches and not standby_matches and ground_duty_match:
+            d_type = "OTHER"
+            d_desc = ground_duty_match.group(1).upper()
+            
+            if d_desc in ('OFF', 'GDO'):
+                d_type = "OFF"
+                d_desc = "Day Off"
+            elif d_desc in ('LVE', 'LEAVE', 'AL'):
+                d_type = "LEAVE"
+                d_desc = "Annual Leave"
+            elif d_desc in ('SIM', 'GRD', 'TRG', 'TRAINING', 'SEP', 'CRM', 'MED'):
+                d_type = "TRAINING"
+                d_desc = f"Training ({d_desc})"
+
+            events.append(DutyEvent(
+                id=f"GND-{d_type}-{current_date}",
+                type=d_type,
+                date=current_date,
+                description=d_desc
+            ))
+
+    return RosterData(
+        crew_name=crew_name,
+        month=matches[0].group(2),
+        year=matches[0].group(3),
+        airline="Malaysia Airlines",
+        events=events
+    )
 
     return RosterData(
         crew_name=crew_name,
