@@ -193,7 +193,26 @@ export async function saveRosterData(userId: string, rosterData: RosterData) {
       rosterData.events.forEach(e => {
         const combineDateAndTime = (dateStr: string, timeStr?: string) => {
           if (!timeStr || timeStr === '--:--') return new Date(`${dateStr}T00:00:00Z`).toISOString();
-          return new Date(`${dateStr}T${timeStr}:00Z`).toISOString();
+          
+          // If timeStr is already an ISO string, just return it
+          if (timeStr.includes('T')) return timeStr;
+
+          try {
+            // Ensure timeStr is HH:mm
+            const cleanTime = timeStr.trim();
+            const finalStr = `${dateStr}T${cleanTime.length === 5 ? cleanTime : '00:00'}:00Z`;
+            const date = new Date(finalStr);
+            
+            if (isNaN(date.getTime())) {
+              console.warn(`Invalid date construction for: ${finalStr}`);
+              return new Date(`${dateStr}T00:00:00Z`).toISOString();
+            }
+            
+            return date.toISOString();
+          } catch (err) {
+            console.error('Error combining date and time:', err);
+            return new Date(`${dateStr}T00:00:00Z`).toISOString();
+          }
         };
 
         const dep = e.depPort?.toUpperCase() || 'KUL';
